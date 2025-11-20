@@ -5,6 +5,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatButtonModule } from '@angular/material/button';
 import { MatGridListModule } from '@angular/material/grid-list';
 import { Router, RouterModule } from '@angular/router';
+import { ApiService } from '../../core/services/api.service';
 
 interface DashboardCard {
   title: string;
@@ -12,6 +13,18 @@ interface DashboardCard {
   icon: string;
   color: string;
   route?: string;
+  loading?: boolean;
+}
+
+interface ResumoDashboard {
+  vendasHoje: {
+    total: number;
+    quantidade: number;
+    ticketMedio: number;
+  };
+  totalProdutos: number;
+  totalClientes: number;
+  produtosEstoqueBaixo: number;
 }
 
 @Component({
@@ -31,14 +44,19 @@ interface DashboardCard {
       <p class="subtitle">Visão geral do sistema</p>
 
       <div class="stats-grid">
-        <mat-card *ngFor="let card of cards" class="stat-card" [class]="card.color">
+        <mat-card *ngFor="let card of cards" class="stat-card" [class]="card.color" 
+                  (click)="navegarPara(card.route)" 
+                  [style.cursor]="card.route ? 'pointer' : 'default'">
           <mat-card-content>
             <div class="stat-header">
               <mat-icon>{{ card.icon }}</mat-icon>
               <span class="stat-title">{{ card.title }}</span>
             </div>
-            <div class="stat-value">{{ card.value }}</div>
-            <button *ngIf="card.route" mat-button [routerLink]="card.route">
+            <div class="stat-value" *ngIf="!card.loading">{{ card.value }}</div>
+            <div class="stat-value loading" *ngIf="card.loading">
+              <mat-icon class="spin">refresh</mat-icon>
+            </div>
+            <button *ngIf="card.route" mat-button>
               Ver mais <mat-icon>arrow_forward</mat-icon>
             </button>
           </mat-card-content>
@@ -48,34 +66,34 @@ interface DashboardCard {
       <div class="quick-actions">
         <h2>Ações Rápidas</h2>
         <div class="action-buttons">
-          <button mat-raised-button color="primary" routerLink="/pdv" class="action-btn">
+          <button mat-raised-button color="primary" (click)="navegarPara('/pdv')" class="action-btn">
             <mat-icon>point_of_sale</mat-icon>
             <span>Nova Venda</span>
           </button>
-          <button mat-raised-button color="accent" routerLink="/produtos/novo" class="action-btn">
+          <button mat-raised-button color="accent" (click)="navegarPara('/produtos/novo')" class="action-btn">
             <mat-icon>add_box</mat-icon>
             <span>Novo Produto</span>
           </button>
-          <button mat-raised-button routerLink="/clientes/novo" class="action-btn">
+          <button mat-raised-button (click)="navegarPara('/clientes/novo')" class="action-btn">
             <mat-icon>person_add</mat-icon>
             <span>Novo Cliente</span>
           </button>
-          <button mat-raised-button routerLink="/relatorios" class="action-btn">
+          <button mat-raised-button (click)="navegarPara('/relatorios')" class="action-btn">
             <mat-icon>analytics</mat-icon>
             <span>Relatórios</span>
           </button>
         </div>
       </div>
 
-      <div class="alerts-section">
-        <mat-card class="alert-card warning">
+      <div class="alerts-section" *ngIf="alertaEstoqueBaixo">
+        <mat-card class="alert-card warning" (click)="navegarPara('/estoque')">
           <mat-card-content>
             <mat-icon>warning</mat-icon>
             <div class="alert-content">
               <strong>Atenção!</strong>
-              <p>5 produtos com estoque abaixo do mínimo</p>
+              <p>{{ alertaEstoqueBaixo }} produtos com estoque abaixo do mínimo</p>
             </div>
-            <button mat-button routerLink="/estoque">Ver Produtos</button>
+            <button mat-button>Ver Produtos</button>
           </mat-card-content>
         </mat-card>
       </div>
@@ -148,6 +166,22 @@ interface DashboardCard {
       margin-bottom: 12px;
     }
 
+    .stat-value.loading {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 54px;
+    }
+
+    .spin {
+      animation: spin 1s linear infinite;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
     .stat-card button {
       color: #667eea;
     }
@@ -189,6 +223,12 @@ interface DashboardCard {
 
     .alert-card {
       border-left: 4px solid #ff9800;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+
+    .alert-card:hover {
+      transform: translateX(4px);
     }
 
     .alert-card mat-card-content {
@@ -224,36 +264,127 @@ export class DashboardComponent implements OnInit {
   cards: DashboardCard[] = [
     {
       title: 'Vendas Hoje',
-      value: 'R$ 2.450,00',
+      value: 'R$ 0,00',
       icon: 'trending_up',
       color: 'blue',
-      route: '/vendas'
+      route: '/vendas',
+      loading: true
     },
     {
       title: 'Produtos Cadastrados',
-      value: '245',
+      value: '0',
       icon: 'inventory_2',
       color: 'green',
-      route: '/produtos'
+      route: '/produtos',
+      loading: true
     },
     {
       title: 'Clientes Ativos',
-      value: '89',
+      value: '0',
       icon: 'people',
       color: 'orange',
-      route: '/clientes'
+      route: '/clientes',
+      loading: true
     },
     {
       title: 'Ticket Médio',
-      value: 'R$ 45,80',
+      value: 'R$ 0,00',
       icon: 'receipt_long',
-      color: 'purple'
+      color: 'purple',
+      loading: true
     }
   ];
 
-  constructor(private router: Router) {}
+  alertaEstoqueBaixo: number | null = null;
+
+  constructor(
+    private router: Router,
+    private apiService: ApiService
+  ) {}
 
   ngOnInit(): void {
-    // Carregar dados reais da API
+    this.carregarDados();
+  }
+
+  carregarDados(): void {
+    this.apiService.get<ResumoDashboard>('dashboard/resumo').subscribe({
+      next: (resumo) => {
+        // Vendas Hoje
+        this.cards[0].value = `R$ ${resumo.vendasHoje.total.toFixed(2).replace('.', ',')}`;
+        this.cards[0].loading = false;
+
+        // Produtos
+        this.cards[1].value = resumo.totalProdutos.toString();
+        this.cards[1].loading = false;
+
+        // Clientes
+        this.cards[2].value = resumo.totalClientes.toString();
+        this.cards[2].loading = false;
+
+        // Ticket Médio
+        this.cards[3].value = `R$ ${resumo.vendasHoje.ticketMedio.toFixed(2).replace('.', ',')}`;
+        this.cards[3].loading = false;
+
+        // Alerta de estoque
+        if (resumo.produtosEstoqueBaixo > 0) {
+          this.alertaEstoqueBaixo = resumo.produtosEstoqueBaixo;
+        }
+      },
+      error: (error) => {
+        console.error('Erro ao carregar dados:', error);
+        // Remover loading mesmo com erro
+        this.cards.forEach(card => card.loading = false);
+      }
+    });
+  }
+
+  navegarPara(rota?: string): void {
+    if (rota) {
+      this.router.navigate([rota]);
+    }
   }
 }
+//  
+//export class DashboardComponent implements OnInit {
+//  cards: DashboardCard[] = [
+//    {
+//      title: 'Vendas Hoje',
+//      value: 'R$ 2.450,00',
+//      icon: 'trending_up',
+//      color: 'blue',
+//      route: '/vendas'
+//    },
+//    {
+//      title: 'Produtos Cadastrados',
+//      value: '245',
+//      icon: 'inventory_2',
+//      color: 'green',
+//      route: '/produtos'
+//    },
+//    {
+//      title: 'Clientes Ativos',
+//      value: '89',
+//      icon: 'people',
+//      color: 'orange',
+//      route: '/clientes'
+//    },
+//    {
+//      title: 'Ticket Médio',
+//      value: 'R$ 45,80',
+//      icon: 'receipt_long',
+//      color: 'purple'
+//    }
+//  ];
+//
+//  constructor(private router: Router) {}
+//
+//  ngOnInit(): void {
+//    // Carregar dados reais da API
+//  }
+//
+//  navegarPara(rota?: string): void {
+//    if (rota) {
+//      this.router.navigate([rota]);
+//    }
+//  }
+//}

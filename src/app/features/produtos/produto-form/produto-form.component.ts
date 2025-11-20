@@ -373,24 +373,24 @@ export class ProdutoFormComponent implements OnInit {
         ? this.produtoService.update(this.produtoId!, produto)
         : this.produtoService.create(produto);
 
-      //operation.subscribe({
-      //  next: () => {
-      //    this.snackBar.open(
-      //      `Produto ${this.isEdit ? 'atualizado' : 'cadastrado'} com sucesso!`,
-      //      'Fechar',
-      //      { duration: 3000 }
-      //    );
-      //    this.router.navigate(['/produtos']);
-      //  },
-      //  error: (error) => {
-      //    this.loading = false;
-      //    this.snackBar.open(
-      //      error.error?.message || 'Erro ao salvar produto',
-      //      'Fechar',
-      //      { duration: 5000 }
-      //    );
-      //  }
-      //});
+      operation.subscribe({
+        next: () => {
+          this.snackBar.open(
+            `Produto ${this.isEdit ? 'atualizado' : 'cadastrado'} com sucesso!`,
+            'Fechar',
+            { duration: 3000 }
+          );
+          this.router.navigate(['/produtos']);
+        },
+        error: (error) => {
+          this.loading = false;
+          this.snackBar.open(
+            error.error?.message || 'Erro ao salvar produto',
+            'Fechar',
+            { duration: 5000 }
+          );
+        }
+      });
     }
   }
 }

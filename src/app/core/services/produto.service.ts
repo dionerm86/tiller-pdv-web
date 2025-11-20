@@ -30,12 +30,12 @@ export class ProdutoService {
   }
 
   create(produto: Produto): Observable<Produto> {
-    return this.api.post<Produto>('produtos', produto);
-  }
+  return this.api.post<Produto>('produtos', produto);
+}
 
-  update(id: number, produto: Produto): Observable<void> {
-    return this.api.put<void>(`produtos/${id}`, produto);
-  }
+update(id: number, produto: Produto): Observable<Produto> {
+  return this.api.put<Produto>(`produtos/${id}`, produto);
+}
 
   delete(id: number): Observable<void> {
     return this.api.delete<void>(`produtos/${id}`);
