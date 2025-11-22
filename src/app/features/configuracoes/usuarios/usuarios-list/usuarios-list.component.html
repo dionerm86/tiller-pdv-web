@@ -1,0 +1,133 @@
+<div class="usuarios-container">
+  <div class="header">
+    <div>
+      <h1>Usuários do Sistema</h1>
+      <p class="subtitle">Gerenciar usuários e permissões</p>
+    </div>
+    <button mat-raised-button color="primary" routerLink="/configuracoes/usuarios/novo">
+      <mat-icon>person_add</mat-icon>
+      Novo Usuário
+    </button>
+  </div>
+
+  <mat-card>
+    <mat-card-content>
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-label>Buscar usuário</mat-label>
+        <input matInput (keyup)="applyFilter($event)" placeholder="Nome, email, CPF...">
+        <mat-icon matPrefix>search</mat-icon>
+      </mat-form-field>
+
+      <div *ngIf="loading" class="loading-container">
+        <mat-icon class="spin">refresh</mat-icon>
+        <p>Carregando usuários...</p>
+      </div>
+
+      <div class="table-container" *ngIf="!loading">
+        <table mat-table [dataSource]="dataSource" matSort>
+          <!-- Nome -->
+          <ng-container matColumnDef="nome">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Nome</th>
+            <td mat-cell *matCellDef="let usuario">
+              <div class="usuario-info">
+                <mat-icon class="avatar-icon">account_circle</mat-icon>
+                <strong>{{ usuario.nome }}</strong>
+              </div>
+            </td>
+          </ng-container>
+
+          <!-- Email -->
+          <ng-container matColumnDef="email">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Email</th>
+            <td mat-cell *matCellDef="let usuario">
+              {{ usuario.email }}
+            </td>
+          </ng-container>
+
+          <!-- CPF -->
+          <ng-container matColumnDef="cpf">
+            <th mat-header-cell *matHeaderCellDef>CPF</th>
+            <td mat-cell *matCellDef="let usuario">
+              {{ usuario.cpf }}
+            </td>
+          </ng-container>
+
+          <!-- Perfil -->
+          <ng-container matColumnDef="perfil">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Perfil</th>
+            <td mat-cell *matCellDef="let usuario">
+              <mat-chip [class]="'chip-' + usuario.perfil.toLowerCase()">
+                {{ formatarPerfil(usuario.perfil) }}
+              </mat-chip>
+            </td>
+          </ng-container>
+
+          <!-- Último Acesso -->
+          <ng-container matColumnDef="ultimoAcesso">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Último Acesso</th>
+            <td mat-cell *matCellDef="let usuario">
+              {{ usuario.dataUltimoAcesso ? (usuario.dataUltimoAcesso | date:'dd/MM/yyyy HH:mm') : 'Nunca acessou' }}
+            </td>
+          </ng-container>
+
+          <!-- Status -->
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let usuario">
+              <mat-chip [class.chip-success]="usuario.ativo"
+                        [class.chip-inactive]="!usuario.ativo">
+                {{ usuario.ativo ? 'Ativo' : 'Inativo' }}
+              </mat-chip>
+            </td>
+          </ng-container>
+
+          <!-- Ações -->
+          <ng-container matColumnDef="acoes">
+            <th mat-header-cell *matHeaderCellDef>Ações</th>
+            <td mat-cell *matCellDef="let usuario">
+              <button mat-icon-button 
+                      [routerLink]="['/configuracoes/usuarios', usuario.id]" 
+                      matTooltip="Editar"
+                      [disabled]="!usuario.ativo">
+                <mat-icon>edit</mat-icon>
+              </button>
+              
+              <button mat-icon-button 
+                      *ngIf="usuario.ativo && usuario.id !== currentUserId"
+                      (click)="excluir(usuario)" 
+                      matTooltip="Inativar" 
+                      color="warn">
+                <mat-icon>block</mat-icon>
+              </button>
+
+              <button mat-icon-button 
+                      *ngIf="!usuario.ativo"
+                      (click)="reativar(usuario)" 
+                      matTooltip="Reativar" 
+                      color="primary">
+                <mat-icon>check_circle</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+          <tr class="mat-row" *matNoDataRow>
+            <td class="mat-cell" [attr.colspan]="displayedColumns.length">
+              <div class="no-data">
+                <mat-icon>people</mat-icon>
+                <p>Nenhum usuário encontrado</p>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <mat-paginator 
+        [pageSizeOptions]="[10, 25, 50]" 
+        showFirstLastButtons>
+      </mat-paginator>
+    </mat-card-content>
+  </mat-card>
+</div>

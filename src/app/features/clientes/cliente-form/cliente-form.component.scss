@@ -1,6 +1,5 @@
-/* estilo base para o formulário - aplicado na .form-container do template */
+/* estilo base para o formulário */
 .form-container {
-  /* Alterado de 1100px para 95% (ou pode usar 1600px se preferir um limite fixo) */
   max-width: 80%; 
   margin: 0 auto;
   padding: 1.25rem;
@@ -47,27 +46,57 @@
   margin-top: 1rem;
 }
 
-/* Ajuste para alinhar o texto ao lado do botão toggle */
+/* CORREÇÃO: Estilo para os toggle fields */
 .toggle-field {
+  grid-column: span 3; /* Ocupa 3 colunas no grid de 6 */
   display: flex;
-  align-items: center; /* Centraliza verticalmente com o grid */
-  padding-top: 0.5rem;
+  align-items: center;
+  padding: 1rem;
+  background: #f9f9f9;
+  border-radius: 8px;
+  border: 1px solid #e0e0e0;
+  margin-bottom: 0.5rem;
 }
 
-/* Estiliza o conteúdo de texto dentro do toggle para ficar organizado */
+/* CORREÇÃO: Ajuste do mat-slide-toggle */
+.toggle-field mat-slide-toggle {
+  width: 100%;
+}
+
+/* CORREÇÃO: Container do conteúdo do toggle */
+.toggle-field mat-slide-toggle ::ng-deep .mdc-form-field {
+  width: 100%;
+}
+
+/* CORREÇÃO: Estiliza o label do toggle */
+.toggle-field mat-slide-toggle ::ng-deep .mdc-label {
+  width: 100%;
+  margin-left: 12px;
+}
+
+/* Estiliza o conteúdo de texto dentro do toggle */
 .toggle-content {
   display: flex;
   flex-direction: column;
-  margin-left: 8px; /* Dá um respiro entre a bolinha e o texto */
-  line-height: 1.2;
+  gap: 4px;
+  width: 100%;
 }
 
 .toggle-content strong {
-  font-size: 0.9rem;
+  font-size: 1rem;
   color: #333;
+  font-weight: 600;
 }
 
 .toggle-content small {
-  font-size: 0.75rem;
+  font-size: 0.813rem;
   color: #666;
+  line-height: 1.3;
+}
+
+/* Responsivo para toggle fields */
+@media (max-width: 900px) {
+  .toggle-field {
+    grid-column: span 2;
+  }
 }

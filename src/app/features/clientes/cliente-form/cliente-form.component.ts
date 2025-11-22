@@ -62,35 +62,35 @@ export class ClienteComponent implements OnInit {
   }
 
   private initForm(): void {
-    // NOTE: nomes aqui devem bater com os used no template (formControlName)
-    this.form = this.fb.group({
-      nome: ['', [Validators.required, Validators.minLength(3)]],
-      tipoPessoa: ['Fisica', Validators.required],         // usado no template
-      cpf_CNPJ: ['', [Validators.required, this.validatorsService.cpfCnpjValidator()]], // template espera cpf_CNPJ
-      rg_IE: [''],
-      dataNascimento: [''],
-      email: ['', [Validators.email]],
-      telefone: ['', [Validators.required]],
-      celular: [''],
-      cep: ['', [Validators.required]],
-      endereco: ['', [Validators.required]], // template usa 'endereco'
-      numero: ['', [Validators.required]],
-      complemento: [''],
-      bairro: ['', [Validators.required]],
-      cidade: ['', [Validators.required]],
-      estado: ['', [Validators.required]],
-      limiteCredito: [0],
-      observacoes: [''],
-      ativo: [true]
-    });
+  this.form = this.fb.group({
+    nome: ['', [Validators.required, Validators.minLength(3)]],
+    tipoPessoa: ['Fisica', Validators.required],
+    cpf_CNPJ: ['', [Validators.required, this.validatorsService.cpfCnpjValidator()]],
+    rg_IE: [''],
+    dataNascimento: [''],
+    email: ['', [Validators.email]],
+    telefone: ['', [Validators.required]],
+    celular: [''],
+    cep: ['', [Validators.required]],
+    endereco: ['', [Validators.required]],
+    numero: ['', [Validators.required]],
+    complemento: [''],
+    bairro: ['', [Validators.required]],
+    cidade: ['', [Validators.required]],
+    estado: ['', [Validators.required]],
+    limiteCredito: [0],
+    observacoes: [''],
+    ativo: [true],
+    podeComprar: [true] // ADICIONAR ESTE CAMPO
+  });
 
-    // Listener para buscar CEP automaticamente
-    this.form.get('cep')?.valueChanges.subscribe(cep => {
-      if (cep && this.cepService.validarCep(cep)) {
-        this.buscarCep(cep);
-      }
-    });
-  }
+  // Listener para buscar CEP automaticamente
+  this.form.get('cep')?.valueChanges.subscribe(cep => {
+    if (cep && this.cepService.validarCep(cep)) {
+      this.buscarCep(cep);
+    }
+  });
+}
 
   private checkEditMode(): void {
     const id = this.route.snapshot.paramMap.get('id');

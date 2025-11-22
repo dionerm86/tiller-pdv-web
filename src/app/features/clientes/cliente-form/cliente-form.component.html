@@ -154,49 +154,50 @@
     </mat-card>
 
     <!-- Informações Comerciais -->
-    <mat-card>
-      <mat-card-header>
-        <mat-card-title>
-          <mat-icon>payments</mat-icon>
-          Informações Comerciais
-        </mat-card-title>
-      </mat-card-header>
-      <mat-card-content>
-        <div class="form-grid">
-          <mat-form-field appearance="outline">
-            <mat-label>Limite de Crédito</mat-label>
-            <input matInput type="number" formControlName="limiteCredito" min="0" step="0.01">
-            <span matPrefix>R$&nbsp;</span>
-            <mat-icon matPrefix>account_balance</mat-icon>
-          </mat-form-field>
+<mat-card>
+  <mat-card-header>
+    <mat-card-title>
+      <mat-icon>payments</mat-icon>
+      Informações Comerciais
+    </mat-card-title>
+  </mat-card-header>
+  <mat-card-content>
+    <div class="form-grid">
+      <mat-form-field appearance="outline">
+        <mat-label>Limite de Crédito</mat-label>
+        <input matInput type="number" formControlName="limiteCredito" min="0" step="0.01">
+        <span matPrefix>R$&nbsp;</span>
+        <mat-icon matPrefix>account_balance</mat-icon>
+      </mat-form-field>
 
-          <mat-form-field appearance="outline" class="col-2">
-            <mat-label>Observações</mat-label>
-            <textarea matInput formControlName="observacoes" rows="3" 
-                      placeholder="Informações adicionais sobre o cliente"></textarea>
-            <mat-icon matPrefix>notes</mat-icon>
-          </mat-form-field>
+      <mat-form-field appearance="outline" class="col-2">
+        <mat-label>Observações</mat-label>
+        <textarea matInput formControlName="observacoes" rows="3" 
+                  placeholder="Informações adicionais sobre o cliente"></textarea>
+        <mat-icon matPrefix>notes</mat-icon>
+      </mat-form-field>
 
-          <div class="toggle-field col-2">
-            <mat-slide-toggle formControlName="ativo" color="primary">
-              <div class="toggle-content">
-                <strong>Cliente Ativo</strong>
-                <small>Cadastro habilitado no sistema</small>
-              </div>
-            </mat-slide-toggle>
+      <!-- CORREÇÃO: Toggles com nova estrutura -->
+      <div class="toggle-field">
+        <mat-slide-toggle formControlName="ativo" color="primary">
+          <div class="toggle-content">
+            <strong>Cliente Ativo</strong>
+            <small>Habilita o cadastro do cliente no sistema</small>
           </div>
+        </mat-slide-toggle>
+      </div>
 
-          <div class="toggle-field col-2">
-            <mat-slide-toggle formControlName="podeComprar" color="warn">
-              <div class="toggle-content">
-                <strong>Realizar Compras</strong>
-                <small>Libera o cliente para novos pedidos</small>
-              </div>
-            </mat-slide-toggle>
+      <div class="toggle-field">
+        <mat-slide-toggle formControlName="podeComprar" color="accent">
+          <div class="toggle-content">
+            <strong>Pode Realizar Compras</strong>
+            <small>Libera o cliente para efetuar novos pedidos</small>
           </div>
-        </div>
-      </mat-card-content>
-    </mat-card>
+        </mat-slide-toggle>
+      </div>
+    </div>
+  </mat-card-content>
+</mat-card>
 
     <!-- Ações -->
     <div class="form-actions">
