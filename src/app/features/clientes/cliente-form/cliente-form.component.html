@@ -177,11 +177,20 @@
             <mat-icon matPrefix>notes</mat-icon>
           </mat-form-field>
 
-          <div class="toggle-field">
+          <div class="toggle-field col-2">
             <mat-slide-toggle formControlName="ativo" color="primary">
               <div class="toggle-content">
                 <strong>Cliente Ativo</strong>
-                <small>Cliente pode realizar compras</small>
+                <small>Cadastro habilitado no sistema</small>
+              </div>
+            </mat-slide-toggle>
+          </div>
+
+          <div class="toggle-field col-2">
+            <mat-slide-toggle formControlName="podeComprar" color="warn">
+              <div class="toggle-content">
+                <strong>Realizar Compras</strong>
+                <small>Libera o cliente para novos pedidos</small>
               </div>
             </mat-slide-toggle>
           </div>
@@ -191,12 +200,12 @@
 
     <!-- Ações -->
     <div class="form-actions">
-      <button mat-button type="button" (click)="cancelar()" [disabled]="loading">
+      <button mat-button type="button" (click)="cancelar()" [disabled]="isLoadingCep">
         Cancelar
       </button>
-      <button mat-raised-button color="primary" type="submit" [disabled]="!form.valid || loading">
-        <mat-icon>{{ loading ? 'hourglass_empty' : 'save' }}</mat-icon>
-        {{ loading ? 'Salvando...' : 'Salvar Cliente' }}
+      <button mat-raised-button color="primary" type="submit" [disabled]="!form.valid || isLoadingCep">
+        <mat-icon>{{ isLoadingCep ? 'hourglass_empty' : 'save' }}</mat-icon>
+        {{ isLoadingCep ? 'Salvando...' : 'Salvar Cliente' }}
       </button>
     </div>
   </form>

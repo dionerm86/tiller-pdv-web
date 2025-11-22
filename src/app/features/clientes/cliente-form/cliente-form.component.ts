@@ -1,17 +1,18 @@
 import { Component, OnInit } from '@angular/core';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule } from '@angular/forms';
+import { CommonModule } from '@angular/common';
+import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
+import { ClienteService } from '../../../core/services/cliente.service';
+import { CepService } from '../../../core/services/cep.service';
+import { ValidatorsService } from '../../../core/services/validador.service';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
-import { MatSlideToggleModule } from '@angular/material/slide-toggle';
-import { CommonModule } from '@angular/common';
-import { ClienteService } from '../../../core/services/cliente.service';
-import { Cliente } from '../../../core/model/cliente.model';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { MatIconModule } from '@angular/material/icon';
-import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSlideToggleModule } from '@angular/material/slide-toggle';
 
 @Component({
   selector: 'app-cliente-form',
@@ -32,13 +33,14 @@ import { MatFormFieldModule } from '@angular/material/form-field';
   templateUrl: './cliente-form.component.html',
   styleUrls: ['./cliente-form.component.scss']
 })
-export class ClienteFormComponent implements OnInit {
+export class ClienteComponent implements OnInit {
   form!: FormGroup;
-  titulo = 'Novo Cliente';
+  isEditMode = false;
   clienteId?: number;
-  loading = false;
+  isLoadingCep = false;
+  titulo = 'Novo Cliente';
+  podeComprar: boolean = true;
 
-  // Lista de UFs brasileiras
   estados = [
     'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA',
     'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN',
@@ -47,104 +49,203 @@ export class ClienteFormComponent implements OnInit {
 
   constructor(
     private fb: FormBuilder,
-    private service: ClienteService,
+    private clienteService: ClienteService,
+    private cepService: CepService,
+    private validatorsService: ValidatorsService,
     private route: ActivatedRoute,
-    private router: Router,
-    private snackbar: MatSnackBar,
+    private router: Router
   ) {}
 
   ngOnInit(): void {
-    this.createForm();
-    this.clienteId = Number(this.route.snapshot.params['id']);
-    
-    if (this.clienteId) {
-      this.titulo = 'Editar Cliente';
-      this.carregarCliente();
-    }
-
-    // Watch para alterar validação baseado no tipo de pessoa
-    this.form.get('tipoPessoa')?.valueChanges.subscribe(() => {
-      this.atualizarValidacoes();
-    });
+    this.initForm();
+    this.checkEditMode();
   }
 
-  createForm(): void {
+  private initForm(): void {
+    // NOTE: nomes aqui devem bater com os used no template (formControlName)
     this.form = this.fb.group({
       nome: ['', [Validators.required, Validators.minLength(3)]],
-      tipoPessoa: ['Fisica', Validators.required],
-      cpf_CNPJ: [''],
+      tipoPessoa: ['Fisica', Validators.required],         // usado no template
+      cpf_CNPJ: ['', [Validators.required, this.validatorsService.cpfCnpjValidator()]], // template espera cpf_CNPJ
       rg_IE: [''],
-      telefone: [''],
+      dataNascimento: [''],
+      email: ['', [Validators.email]],
+      telefone: ['', [Validators.required]],
       celular: [''],
-      email: ['', Validators.email],
-      dataNascimento: [null],
-      endereco: [''],
-      numero: [''],
+      cep: ['', [Validators.required]],
+      endereco: ['', [Validators.required]], // template usa 'endereco'
+      numero: ['', [Validators.required]],
       complemento: [''],
-      bairro: [''],
-      cidade: [''],
-      estado: [''],
-      cep: [''],
+      bairro: ['', [Validators.required]],
+      cidade: ['', [Validators.required]],
+      estado: ['', [Validators.required]],
       limiteCredito: [0],
       observacoes: [''],
       ativo: [true]
     });
+
+    // Listener para buscar CEP automaticamente
+    this.form.get('cep')?.valueChanges.subscribe(cep => {
+      if (cep && this.cepService.validarCep(cep)) {
+        this.buscarCep(cep);
+      }
+    });
   }
 
-  atualizarValidacoes(): void {
-    const tipoPessoa = this.form.get('tipoPessoa')?.value;
-    const cpfCnpjControl = this.form.get('cpf_CNPJ');
-
-    if (tipoPessoa === 'Fisica') {
-      cpfCnpjControl?.setValidators([Validators.minLength(11), Validators.maxLength(11)]);
-    } else {
-      cpfCnpjControl?.setValidators([Validators.minLength(14), Validators.maxLength(14)]);
+  private checkEditMode(): void {
+    const id = this.route.snapshot.paramMap.get('id');
+    if (id) {
+      this.isEditMode = true;
+      this.clienteId = +id;
+      this.titulo = 'Editar Cliente';
+      this.loadcliente(this.clienteId);
     }
-    cpfCnpjControl?.updateValueAndValidity();
   }
 
-  carregarCliente(): void {
-    this.loading = true;
-    this.service.getById(this.clienteId!).subscribe({
+  private loadcliente(id: number): void {
+    this.clienteService.getById(id).subscribe({
       next: (cliente) => {
-        this.form.patchValue(cliente);
-        this.loading = false;
+        if (cliente) {
+          // mapeia os nomes do backend para os nomes do form se necessário
+          const patch = {
+            nome: cliente.nome,
+            tipoPessoa: cliente.tipoPessoa ?? 'Fisica',
+            cpf_CNPJ: cliente.cpf_CNPJ ?? cliente.cpf_CNPJ,
+            rg_IE: cliente.rg_IE,
+            dataNascimento: cliente.dataNascimento,
+            email: cliente.email,
+            telefone: cliente.telefone,
+            celular: cliente.celular,
+            cep: cliente.cep,
+            endereco: cliente.endereco,
+            numero: cliente.numero,
+            complemento: cliente.complemento,
+            bairro: cliente.bairro,
+            cidade: cliente.cidade,
+            estado: cliente.estado,
+            limiteCredito: cliente.limiteCredito,
+            observacoes: cliente.observacoes,
+            ativo: cliente.ativo ?? true
+          };
+          this.form.patchValue(patch);
+        }
       },
       error: (error) => {
-        this.snackbar.open('Erro ao carregar cliente', 'Fechar', { duration: 3000 });
-        this.loading = false;
-        this.router.navigate(['/clientes']);
+        console.error('Erro ao carregar cliente:', error);
+        alert('Erro ao carregar dados do cliente!');
+      }
+    });
+  }
+
+  buscarCep(cep: string): void {
+    this.isLoadingCep = true;
+
+    this.cepService.buscarCep(cep).subscribe({
+      next: (endereco) => {
+        this.isLoadingCep = false;
+
+        if (endereco) {
+          this.form.patchValue({
+            endereco: endereco.logradouro,
+            bairro: endereco.bairro,
+            cidade: endereco.cidade,
+            estado: endereco.estado
+          });
+
+          // Foca no campo número após preencher o endereço
+          setTimeout(() => {
+            const numeroInput = document.querySelector('[formControlName="numero"]') as HTMLInputElement;
+            if (numeroInput) {
+              numeroInput.focus();
+            }
+          }, 100);
+        } else {
+          alert('CEP não encontrado!');
+        }
+      },
+      error: (error) => {
+        this.isLoadingCep = false;
+        console.error('Erro ao buscar CEP:', error);
+        alert('Erro ao buscar CEP. Verifique sua conexão!');
       }
     });
   }
 
   salvar(): void {
     if (this.form.invalid) {
-      this.snackbar.open('Preencha os campos obrigatórios corretamente', 'Fechar', { duration: 3000 });
+      this.form.markAllAsTouched();
+      alert('Por favor, preencha todos os campos obrigatórios corretamente!');
       return;
     }
 
-    this.loading = true;
-    const cliente: Cliente = this.form.value;
+    const cliente = this.form.value;
 
-    const req = this.clienteId
-      ? this.service.update(this.clienteId, cliente)
-      : this.service.create(cliente);
-
-    req.subscribe({
-      next: () => {
-        this.snackbar.open('Cliente salvo com sucesso!', 'Fechar', { duration: 3000 });
-        this.router.navigate(['/clientes']);
-      },
-      error: (error) => {
-        this.loading = false;
-        const mensagem = error.error?.message || 'Erro ao salvar cliente';
-        this.snackbar.open(mensagem, 'Fechar', { duration: 5000 });
-      }
-    });
+    // Se estiver editando, use o id da rota (this.clienteId). Evita depender de cliente.Id no form value.
+    if (this.isEditMode && this.clienteId) {
+      this.clienteService.update(this.clienteId, cliente).subscribe({
+        next: () => {
+          alert('Cliente atualizado com sucesso!');
+          this.router.navigate(['/clientes']);
+        },
+        error: (error) => {
+          console.error('Erro ao atualizar cliente:', error);
+          alert('Erro ao salvar cliente!');
+        }
+      });
+    } else {
+      this.clienteService.create(cliente).subscribe({
+        next: () => {
+          alert('Cliente cadastrado com sucesso!');
+          this.router.navigate(['/clientes']);
+        },
+        error: (error) => {
+          console.error('Erro ao criar cliente:', error);
+          alert('Erro ao salvar cliente!');
+        }
+      });
+    }
   }
 
   cancelar(): void {
-    this.router.navigate(['/clientes']);
+    if (confirm('Deseja realmente cancelar? As alterações não salvas serão perdidas.')) {
+      this.router.navigate(['/clientes']);
+    }
+  }
+
+  hasError(fieldName: string, errorType: string): boolean {
+    const field = this.form.get(fieldName);
+    return !!(field && field.hasError(errorType) && field.touched);
+  }
+
+  getErrorMessage(fieldName: string): string {
+    const field = this.form.get(fieldName);
+
+    if (!field || !field.errors || !field.touched) {
+      return '';
+    }
+
+    if (field.hasError('required')) {
+      return 'Este campo é obrigatório';
+    }
+
+    if (field.hasError('email')) {
+      return 'E-mail inválido';
+    }
+
+    if (field.hasError('minlength')) {
+      const minLength = field.errors!['minlength'].requiredLength;
+      return `Mínimo de ${minLength} caracteres`;
+    }
+
+    // adaptações possíveis para os erros customizados do validador
+    if (field.hasError('cpfInvalido')) {
+      return 'CPF inválido';
+    }
+
+    if (field.hasError('cnpjInvalido')) {
+      return 'CNPJ inválido';
+    }
+
+    return 'Campo inválido';
   }
 }
