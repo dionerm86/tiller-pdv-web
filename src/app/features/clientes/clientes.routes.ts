@@ -8,5 +8,9 @@ export const CLIENTES_ROUTES: Routes = [
   {
     path: 'novo',
     loadComponent: () => import('./cliente-form/cliente-form.component').then(m => m.ClienteFormComponent)
+  },
+  {
+    path: ':id',
+    loadComponent: () => import('./cliente-form/cliente-form.component').then(m => m.ClienteFormComponent)
   }
 ];

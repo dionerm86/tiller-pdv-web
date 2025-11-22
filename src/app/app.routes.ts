@@ -2,10 +2,13 @@ import { Routes } from '@angular/router';
 import { AuthGuard } from './core/guards/auth.guard';
 
 export const routes: Routes = [
+  // Rota de login SEM guard (público)
   {
     path: 'login',
     loadComponent: () => import('./features/auth/login/login.component').then(m => m.LoginComponent)
   },
+  
+  // Rotas protegidas COM guard
   {
     path: '',
     loadComponent: () => import('./layout/layout.component').then(m => m.LayoutComponent),
@@ -54,6 +57,8 @@ export const routes: Routes = [
       }
     ]
   },
+  
+  // Wildcard - redireciona para login se não autenticado
   {
     path: '**',
     redirectTo: 'login'

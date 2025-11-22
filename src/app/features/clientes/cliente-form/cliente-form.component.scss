@@ -1,0 +1,24 @@
+.container {
+  padding: 24px;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.full {
+  flex: 1;
+}
+
+mat-form-field {
+  flex: 1;
+}

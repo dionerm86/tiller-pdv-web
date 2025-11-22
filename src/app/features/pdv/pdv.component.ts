@@ -619,12 +619,22 @@ export class PdvComponent implements OnInit {
   }
 
   finalizarVenda(): void {
+    const formaPagamentoMap: { [key: string]: FormarPagamento } = {
+    'Dinheiro': FormarPagamento.Dinheiro,
+    'CartaoDebito': FormarPagamento.CartaoDebito,
+    'CartaoCredito': FormarPagamento.CartaoCredito,
+    'Pix': FormarPagamento.Pix,
+    'APrazo': FormarPagamento.APrazo,
+    'Multiplo': FormarPagamento.Multiplo
+  };
+
     const venda: Venda = {
       caixaId: this.caixaAberto!.id!,
       valorBruto: this.calcularSubtotal(),
       valorDesconto: this.desconto,
       valorTotal: this.calcularTotal(),
       formaPagamento: this.formaPagamento as any,
+      formaPagamentoId: formaPagamentoMap[this.formaPagamento],
       valorPago: this.formaPagamento === 'Dinheiro' ? this.valorPago : undefined,
       itens: this.itensVenda.map(item => ({
         produtoId: item.produtoId,
@@ -693,4 +703,13 @@ export class PdvComponent implements OnInit {
       panelClass: `snackbar-${type}`
     });
   }
+}
+
+enum FormarPagamento {
+Dinheiro,
+CartaoDebito,
+CartaoCredito,
+Pix,
+APrazo,
+Multiplo
 }

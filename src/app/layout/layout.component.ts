@@ -124,7 +124,7 @@ interface MenuItem {
 
     .sidenav {
       width: 260px;
-      background: #1a1a2e;
+      background: #2c3e50;
       color: white;
     }
 
@@ -154,20 +154,31 @@ interface MenuItem {
     }
 
     mat-nav-list a {
-      color: #b0b3c1;
+      color: #ecf0f1;
       margin: 4px 8px;
       border-radius: 8px;
       transition: all 0.3s;
+      font-weight: 500;
     }
 
     mat-nav-list a:hover {
-      background: rgba(255,255,255,0.05);
+      background: rgba(255,255,255,0.15);
       color: white;
     }
 
     mat-nav-list a.active {
-      background: rgba(102, 126, 234, 0.2);
+      background: rgba(102, 126, 234, 0.3);
       color: white;
+      font-weight: 600;
+    }
+
+    mat-nav-list a mat-icon {
+      color: #bdc3c7;
+    }
+
+    mat-nav-list a:hover mat-icon,
+    mat-nav-list a.active mat-icon {
+      color: #fff;
     }
 
     .sidebar-footer {
@@ -182,7 +193,7 @@ interface MenuItem {
       align-items: center;
       gap: 12px;
       padding: 12px;
-      background: rgba(255,255,255,0.05);
+      background: rgba(255,255,255,0.1);
       border-radius: 8px;
       margin-top: 16px;
     }
@@ -191,6 +202,7 @@ interface MenuItem {
       font-size: 40px;
       width: 40px;
       height: 40px;
+      color: #ecf0f1;
     }
 
     .user-details {
@@ -201,11 +213,12 @@ interface MenuItem {
     .user-name {
       font-weight: 600;
       font-size: 14px;
+      color: #ecf0f1;
     }
 
     .user-role {
       font-size: 12px;
-      color: #b0b3c1;
+      color: #bdc3c7;
     }
 
     .toolbar {

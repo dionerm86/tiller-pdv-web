@@ -1,4 +1,5 @@
 import { Produto } from "./produto.model";
+import { Usuario } from "./usuario.model";
 
 export interface Venda {
   id?: number;
@@ -12,12 +13,17 @@ export interface Venda {
   valorDesconto: number;
   percentualDesconto?: number;
   valorTotal: number;
-  formaPagamento: 'Dinheiro' | 'CartaoDebito' | 'CartaoCredito' | 'Pix' | 'APrazo' | 'Multiplo';
+  formaPagamento: string;
+  formaPagamentoId: number;
   valorPago?: number;
   valorTroco?: number;
   status?: 'Concluida' | 'Cancelada' | 'Devolvida';
   observacoes?: string;
   itens: ItemVenda[];
+  chaveNFCe?: string;
+  dataCancelamento?: Date;
+  motivoCancelamento?: string;
+  usuario?: Usuario;
   pagamentos?: PagamentoVenda[];
 }
 

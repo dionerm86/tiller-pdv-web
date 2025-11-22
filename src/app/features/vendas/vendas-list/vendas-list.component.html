@@ -1,0 +1,197 @@
+<div class="vendas-container">
+  <div class="header">
+    <div>
+      <h1>Histórico de Vendas</h1>
+      <p class="subtitle">Consultar e gerenciar vendas realizadas</p>
+    </div>
+    <button mat-raised-button color="primary" (click)="exportar()">
+      <mat-icon>download</mat-icon>
+      Exportar
+    </button>
+  </div>
+
+  <!-- Filtros -->
+  <mat-card class="filtros-card">
+    <mat-card-content>
+      <form [formGroup]="filtrosForm" class="filtros-form">
+        <mat-form-field appearance="outline">
+          <mat-label>Data Início</mat-label>
+          <input matInput [matDatepicker]="pickerInicio" formControlName="dataInicio">
+          <mat-datepicker-toggle matIconSuffix [for]="pickerInicio"></mat-datepicker-toggle>
+          <mat-datepicker #pickerInicio></mat-datepicker>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Data Fim</mat-label>
+          <input matInput [matDatepicker]="pickerFim" formControlName="dataFim">
+          <mat-datepicker-toggle matIconSuffix [for]="pickerFim"></mat-datepicker-toggle>
+          <mat-datepicker #pickerFim></mat-datepicker>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Status</mat-label>
+          <mat-select formControlName="status">
+            <mat-option value="">Todos</mat-option>
+            <mat-option value="Concluida">Concluída</mat-option>
+            <mat-option value="Cancelada">Cancelada</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Forma de Pagamento</mat-label>
+          <mat-select formControlName="formaPagamento">
+            <mat-option value="">Todas</mat-option>
+            <mat-option value="Dinheiro">Dinheiro</mat-option>
+            <mat-option value="CartaoDebito">Cartão Débito</mat-option>
+            <mat-option value="CartaoCredito">Cartão Crédito</mat-option>
+            <mat-option value="Pix">PIX</mat-option>
+            <mat-option value="APrazo">A Prazo</mat-option>
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="busca-field">
+          <mat-label>Buscar</mat-label>
+          <input matInput formControlName="busca" placeholder="Nº venda, cliente...">
+          <mat-icon matPrefix>search</mat-icon>
+        </mat-form-field>
+
+        <button mat-raised-button color="primary" (click)="aplicarFiltros()">
+          <mat-icon>filter_list</mat-icon>
+          Filtrar
+        </button>
+
+        <button mat-stroked-button (click)="limparFiltros()">
+          <mat-icon>clear</mat-icon>
+          Limpar
+        </button>
+      </form>
+
+      <!-- Resumo das Vendas Filtradas -->
+      <div class="resumo-vendas" *ngIf="resumoVendas">
+        <div class="resumo-item">
+          <span class="label">Total de Vendas:</span>
+          <span class="value">{{ resumoVendas.quantidade }}</span>
+        </div>
+        <div class="resumo-item">
+          <span class="label">Valor Total:</span>
+          <span class="value primary">R$ {{ resumoVendas.valorTotal | number:'1.2-2' }}</span>
+        </div>
+        <div class="resumo-item">
+          <span class="label">Ticket Médio:</span>
+          <span class="value">R$ {{ resumoVendas.ticketMedio | number:'1.2-2' }}</span>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Tabela de Vendas -->
+  <mat-card>
+    <mat-card-content>
+      <div class="table-container">
+        <table mat-table [dataSource]="dataSource" matSort>
+          <!-- Número Venda -->
+          <ng-container matColumnDef="numeroVenda">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Nº Venda</th>
+            <td mat-cell *matCellDef="let venda">
+              <strong>{{ venda.numeroVenda }}</strong>
+            </td>
+          </ng-container>
+
+          <!-- Data/Hora -->
+          <ng-container matColumnDef="dataHora">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Data/Hora</th>
+            <td mat-cell *matCellDef="let venda">
+              {{ venda.dataHora | date:'dd/MM/yyyy HH:mm' }}
+            </td>
+          </ng-container>
+
+          <!-- Cliente -->
+          <ng-container matColumnDef="cliente">
+            <th mat-header-cell *matHeaderCellDef>Cliente</th>
+            <td mat-cell *matCellDef="let venda">
+              {{ venda.cliente?.nome || 'Consumidor Final' }}
+            </td>
+          </ng-container>
+
+          <!-- Vendedor -->
+          <ng-container matColumnDef="vendedor">
+            <th mat-header-cell *matHeaderCellDef>Vendedor</th>
+            <td mat-cell *matCellDef="let venda">
+              {{ venda.usuario?.nome }}
+            </td>
+          </ng-container>
+
+          <!-- Forma Pagamento -->
+          <ng-container matColumnDef="formaPagamento">
+            <th mat-header-cell *matHeaderCellDef>Pagamento</th>
+            <td mat-cell *matCellDef="let venda">
+              <mat-chip [class]="'chip-' + venda.formaPagamento">
+                {{ formatarFormaPagamento(venda.formaPagamento) }}
+              </mat-chip>
+            </td>
+          </ng-container>
+
+          <!-- Valor Total -->
+          <ng-container matColumnDef="valorTotal">
+            <th mat-header-cell *matHeaderCellDef mat-sort-header>Valor Total</th>
+            <td mat-cell *matCellDef="let venda">
+              <strong class="valor-destaque">R$ {{ venda.valorTotal | number:'1.2-2' }}</strong>
+            </td>
+          </ng-container>
+
+          <!-- Status -->
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let venda">
+              <mat-chip [class.chip-success]="venda.status === 'Concluida'"
+                        [class.chip-danger]="venda.status === 'Cancelada'">
+                {{ venda.status }}
+              </mat-chip>
+            </td>
+          </ng-container>
+
+          <!-- Ações -->
+          <ng-container matColumnDef="acoes">
+            <th mat-header-cell *matHeaderCellDef>Ações</th>
+            <td mat-cell *matCellDef="let venda">
+              <button mat-icon-button (click)="verDetalhes(venda)" matTooltip="Ver Detalhes">
+                <mat-icon>visibility</mat-icon>
+              </button>
+              <button mat-icon-button (click)="imprimirComprovante(venda)" matTooltip="Imprimir">
+                <mat-icon>print</mat-icon>
+              </button>
+              <button mat-icon-button 
+                      (click)="cancelarVenda(venda)" 
+                      matTooltip="Cancelar Venda"
+                      [disabled]="venda.status === 'Cancelada'"
+                      color="warn">
+                <mat-icon>cancel</mat-icon>
+              </button>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: displayedColumns;" 
+              class="table-row"
+              (click)="verDetalhes(row)"></tr>
+
+          <tr class="mat-row" *matNoDataRow>
+            <td class="mat-cell" [attr.colspan]="displayedColumns.length">
+              <div class="no-data">
+                <mat-icon>receipt_long</mat-icon>
+                <p>Nenhuma venda encontrada</p>
+                <small>Ajuste os filtros ou realize novas vendas</small>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </div>
+
+      <mat-paginator 
+        [pageSizeOptions]="[10, 25, 50, 100]"
+        [pageSize]="25"
+        showFirstLastButtons>
+      </mat-paginator>
+    </mat-card-content>
+  </mat-card>
+</div>
