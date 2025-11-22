@@ -342,16 +342,6 @@ export class RelatoriosComponent implements OnInit {
     this.carregarRelatorios();
   }
 
-  exportarRelatorio(tipo: string): void {
-    const params = this.getFiltrosParams();
-    const queryString = Object.keys(params)
-      .map(key => `${key}=${encodeURIComponent(params[key])}`)
-      .join('&');
-
-    // Aqui você pode implementar a exportação real
-    this.showMessage(`Exportando relatório de ${tipo}...`, 'info');
-  }
-
   showMessage(message: string, type: 'success' | 'error' | 'info' = 'info'): void {
     this.snackBar.open(message, 'Fechar', {
       duration: 3000,
@@ -360,4 +350,52 @@ export class RelatoriosComponent implements OnInit {
       panelClass: `snackbar-${type}`
     });
   }
+
+  exportarRelatorio(tipo: string): void {
+  const params = this.getFiltrosParams();
+  
+  let endpoint = '';
+  let nomeArquivo = '';
+  
+  switch(tipo) {
+    case 'vendas':
+      endpoint = 'relatorios/vendas';
+      nomeArquivo = 'relatorio-vendas';
+      break;
+    case 'produtos':
+      endpoint = 'relatorios/produtos-mais-vendidos';
+      nomeArquivo = 'produtos-mais-vendidos';
+      break;
+    case 'faturamento':
+      endpoint = 'relatorios/faturamento';
+      nomeArquivo = 'relatorio-faturamento';
+      break;
+    default:
+      endpoint = 'relatorios/dashboard';
+      nomeArquivo = 'dashboard-completo';
+  }
+  
+  // Buscar dados e exportar como JSON
+  this.apiService.get<any>(endpoint, params).subscribe({
+    next: (data) => {
+      // Converter para CSV ou JSON
+      const dataStr = JSON.stringify(data, null, 2);
+      const blob = new Blob([dataStr], { type: 'application/json' });
+      
+      // Criar URL e download
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${nomeArquivo}-${new Date().toISOString().split('T')[0]}.json`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+      
+      this.showMessage('Relatório exportado com sucesso!', 'success');
+    },
+    error: (error) => {
+      console.error('Erro ao exportar:', error);
+      this.showMessage('Erro ao exportar relatório', 'error');
+    }
+  });
+}
 }

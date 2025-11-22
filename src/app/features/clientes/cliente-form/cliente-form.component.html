@@ -1,95 +1,203 @@
-<div class="container">
+<div class="form-container">
   <div class="header">
     <button mat-icon-button routerLink="/clientes">
       <mat-icon>arrow_back</mat-icon>
     </button>
-    <h1>{{ titulo }}</h1>
+    <div>
+      <h1>{{ titulo }}</h1>
+      <p class="subtitle">Preencha os dados do cliente</p>
+    </div>
   </div>
 
-  <mat-card>
-    <mat-card-content>
-      <form [formGroup]="form">
-
-        <div class="row">
-          <mat-form-field appearance="outline">
-            <mat-label>Nome</mat-label>
-            <input matInput formControlName="nome">
+  <form [formGroup]="form" (ngSubmit)="salvar()">
+    <!-- Dados Principais -->
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>person</mat-icon>
+          Informações Principais
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="form-grid">
+          <mat-form-field appearance="outline" class="col-2">
+            <mat-label>Nome / Razão Social</mat-label>
+            <input matInput formControlName="nome" placeholder="Nome completo ou razão social">
+            <mat-icon matPrefix>badge</mat-icon>
+            <mat-error *ngIf="form.get('nome')?.hasError('required')">
+              Nome é obrigatório
+            </mat-error>
+            <mat-error *ngIf="form.get('nome')?.hasError('minlength')">
+              Nome deve ter no mínimo 3 caracteres
+            </mat-error>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
-            <mat-label>Tipo Pessoa</mat-label>
+            <mat-label>Tipo de Pessoa</mat-label>
             <mat-select formControlName="tipoPessoa">
-              <mat-option value="Fisica">Física</mat-option>
-              <mat-option value="Juridica">Jurídica</mat-option>
+              <mat-option value="Fisica">Pessoa Física</mat-option>
+              <mat-option value="Juridica">Pessoa Jurídica</mat-option>
             </mat-select>
+            <mat-icon matPrefix>business</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>{{ form.get('tipoPessoa')?.value === 'Fisica' ? 'CPF' : 'CNPJ' }}</mat-label>
+            <input matInput formControlName="cpf_CNPJ" 
+                   [placeholder]="form.get('tipoPessoa')?.value === 'Fisica' ? '000.000.000-00' : '00.000.000/0000-00'">
+            <mat-icon matPrefix>fingerprint</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>{{ form.get('tipoPessoa')?.value === 'Fisica' ? 'RG' : 'Inscrição Estadual' }}</mat-label>
+            <input matInput formControlName="rg_IE">
+            <mat-icon matPrefix>description</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" *ngIf="form.get('tipoPessoa')?.value === 'Fisica'">
+            <mat-label>Data de Nascimento</mat-label>
+            <input matInput type="date" formControlName="dataNascimento">
+            <mat-icon matPrefix>cake</mat-icon>
           </mat-form-field>
         </div>
+      </mat-card-content>
+    </mat-card>
 
-        <div class="row">
-          <mat-form-field appearance="outline">
-            <mat-label>CPF/CNPJ</mat-label>
-            <input matInput formControlName="cpf_Cnpj">
-          </mat-form-field>
-
+    <!-- Contato -->
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>contact_phone</mat-icon>
+          Contato
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="form-grid">
           <mat-form-field appearance="outline">
             <mat-label>Telefone</mat-label>
-            <input matInput formControlName="telefone">
+            <input matInput formControlName="telefone" placeholder="(00) 0000-0000">
+            <mat-icon matPrefix>phone</mat-icon>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>Celular</mat-label>
-            <input matInput formControlName="celular">
+            <input matInput formControlName="celular" placeholder="(00) 00000-0000">
+            <mat-icon matPrefix>smartphone</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>E-mail</mat-label>
+            <input matInput type="email" formControlName="email" placeholder="cliente@exemplo.com">
+            <mat-icon matPrefix>email</mat-icon>
+            <mat-error>E-mail inválido</mat-error>
           </mat-form-field>
         </div>
+      </mat-card-content>
+    </mat-card>
 
-        <div class="row">
-          <mat-form-field appearance="outline" class="full">
-            <mat-label>Email</mat-label>
-            <input matInput formControlName="email">
+    <!-- Endereço -->
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>location_on</mat-icon>
+          Endereço
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="form-grid">
+          <mat-form-field appearance="outline">
+            <mat-label>CEP</mat-label>
+            <input matInput formControlName="cep" placeholder="00000-000">
+            <mat-icon matPrefix>markunread_mailbox</mat-icon>
           </mat-form-field>
-        </div>
 
-        <div class="row">
-          <mat-form-field appearance="outline" class="full">
+          <mat-form-field appearance="outline" class="col-2">
             <mat-label>Endereço</mat-label>
-            <input matInput formControlName="endereco">
+            <input matInput formControlName="endereco" placeholder="Rua, Avenida...">
+            <mat-icon matPrefix>home</mat-icon>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>Número</mat-label>
-            <input matInput formControlName="numero">
+            <input matInput formControlName="numero" placeholder="123">
           </mat-form-field>
-        </div>
 
-        <div class="row">
+          <mat-form-field appearance="outline">
+            <mat-label>Complemento</mat-label>
+            <input matInput formControlName="complemento" placeholder="Apto, Bloco...">
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Bairro</mat-label>
+            <input matInput formControlName="bairro">
+            <mat-icon matPrefix>location_city</mat-icon>
+          </mat-form-field>
+
           <mat-form-field appearance="outline">
             <mat-label>Cidade</mat-label>
             <input matInput formControlName="cidade">
+            <mat-icon matPrefix>location_city</mat-icon>
           </mat-form-field>
 
           <mat-form-field appearance="outline">
             <mat-label>Estado</mat-label>
-            <input matInput formControlName="estado">
+            <mat-select formControlName="estado">
+              <mat-option value="">Selecione</mat-option>
+              <mat-option *ngFor="let estado of estados" [value]="estado">
+                {{ estado }}
+              </mat-option>
+            </mat-select>
+            <mat-icon matPrefix>map</mat-icon>
           </mat-form-field>
         </div>
+      </mat-card-content>
+    </mat-card>
 
-        <div class="row">
+    <!-- Informações Comerciais -->
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>
+          <mat-icon>payments</mat-icon>
+          Informações Comerciais
+        </mat-card-title>
+      </mat-card-header>
+      <mat-card-content>
+        <div class="form-grid">
           <mat-form-field appearance="outline">
             <mat-label>Limite de Crédito</mat-label>
-            <input type="number" matInput formControlName="limiteCredito">
+            <input matInput type="number" formControlName="limiteCredito" min="0" step="0.01">
+            <span matPrefix>R$&nbsp;</span>
+            <mat-icon matPrefix>account_balance</mat-icon>
           </mat-form-field>
+
+          <mat-form-field appearance="outline" class="col-2">
+            <mat-label>Observações</mat-label>
+            <textarea matInput formControlName="observacoes" rows="3" 
+                      placeholder="Informações adicionais sobre o cliente"></textarea>
+            <mat-icon matPrefix>notes</mat-icon>
+          </mat-form-field>
+
+          <div class="toggle-field">
+            <mat-slide-toggle formControlName="ativo" color="primary">
+              <div class="toggle-content">
+                <strong>Cliente Ativo</strong>
+                <small>Cliente pode realizar compras</small>
+              </div>
+            </mat-slide-toggle>
+          </div>
         </div>
+      </mat-card-content>
+    </mat-card>
 
-        <mat-form-field appearance="outline" class="full">
-          <mat-label>Observações</mat-label>
-          <textarea matInput formControlName="observacoes"></textarea>
-        </mat-form-field>
-
-        <button mat-raised-button color="primary" (click)="salvar()">
-          <mat-icon>save</mat-icon>
-          Salvar
-        </button>
-      </form>
-    </mat-card-content>
-  </mat-card>
+    <!-- Ações -->
+    <div class="form-actions">
+      <button mat-button type="button" (click)="cancelar()" [disabled]="loading">
+        Cancelar
+      </button>
+      <button mat-raised-button color="primary" type="submit" [disabled]="!form.valid || loading">
+        <mat-icon>{{ loading ? 'hourglass_empty' : 'save' }}</mat-icon>
+        {{ loading ? 'Salvando...' : 'Salvar Cliente' }}
+      </button>
+    </div>
+  </form>
 </div>

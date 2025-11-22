@@ -111,6 +111,7 @@ export class CaixaComponent implements OnInit {
       }
     });
   }
+  
 
   carregarHistorico(): void {
     const dataInicio = new Date();
