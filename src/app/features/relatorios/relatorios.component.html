@@ -1,0 +1,244 @@
+<div class="relatorios-container">
+  <div class="header">
+    <div>
+      <h1>Relatórios e Análises</h1>
+      <p class="subtitle">Dashboards e indicadores de performance</p>
+    </div>
+    <div class="action-buttons">
+      <button mat-raised-button color="primary" (click)="exportarRelatorio('vendas')">
+        <mat-icon>file_download</mat-icon>
+        Exportar
+      </button>
+    </div>
+  </div>
+
+  <!-- Filtros -->
+  <mat-card class="filtros-card">
+    <mat-card-content>
+      <form [formGroup]="filtrosForm" class="filtros-form">
+        <mat-form-field appearance="outline">
+          <mat-label>Data Início</mat-label>
+          <input matInput [matDatepicker]="pickerInicio" formControlName="dataInicio">
+          <mat-datepicker-toggle matIconSuffix [for]="pickerInicio"></mat-datepicker-toggle>
+          <mat-datepicker #pickerInicio></mat-datepicker>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Data Fim</mat-label>
+          <input matInput [matDatepicker]="pickerFim" formControlName="dataFim">
+          <mat-datepicker-toggle matIconSuffix [for]="pickerFim"></mat-datepicker-toggle>
+          <mat-datepicker #pickerFim></mat-datepicker>
+        </mat-form-field>
+
+        <button mat-raised-button color="primary" (click)="aplicarFiltros()" [disabled]="loading">
+          <mat-icon>search</mat-icon>
+          Atualizar
+        </button>
+      </form>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Loading -->
+  <div class="loading-container" *ngIf="loading">
+    <mat-icon class="spin">refresh</mat-icon>
+    <p>Carregando relatórios...</p>
+  </div>
+
+  <!-- Conteúdo -->
+  <div *ngIf="!loading">
+    <mat-tab-group>
+      <!-- Tab: Visão Geral -->
+      <mat-tab label="Visão Geral">
+        <div class="tab-content">
+          <!-- Cards de Resumo -->
+          <div class="resumo-cards" *ngIf="relatorioVendas && relatorioFaturamento">
+            <mat-card class="resumo-card vendas">
+              <mat-card-content>
+                <div class="card-icon">
+                  <mat-icon>shopping_cart</mat-icon>
+                </div>
+                <div class="card-info">
+                  <span class="label">Total de Vendas</span>
+                  <span class="value">{{ relatorioVendas.quantidadeVendas }}</span>
+                  <span class="subtitle">R$ {{ relatorioVendas.totalVendas | number:'1.2-2' }}</span>
+                </div>
+              </mat-card-content>
+            </mat-card>
+
+            <mat-card class="resumo-card ticket">
+              <mat-card-content>
+                <div class="card-icon">
+                  <mat-icon>attach_money</mat-icon>
+                </div>
+                <div class="card-info">
+                  <span class="label">Ticket Médio</span>
+                  <span class="value">R$ {{ relatorioVendas.ticketMedio | number:'1.2-2' }}</span>
+                  <span class="subtitle">Por venda</span>
+                </div>
+              </mat-card-content>
+            </mat-card>
+
+            <mat-card class="resumo-card faturamento">
+              <mat-card-content>
+                <div class="card-icon">
+                  <mat-icon>trending_up</mat-icon>
+                </div>
+                <div class="card-info">
+                  <span class="label">Faturamento Líquido</span>
+                  <span class="value">R$ {{ relatorioFaturamento.faturamentoLiquido | number:'1.2-2' }}</span>
+                  <span class="subtitle">Descontos: R$ {{ relatorioFaturamento.totalDescontos | number:'1.2-2' }}</span>
+                </div>
+              </mat-card-content>
+            </mat-card>
+
+            <mat-card class="resumo-card canceladas">
+              <mat-card-content>
+                <div class="card-icon">
+                  <mat-icon>cancel</mat-icon>
+                </div>
+                <div class="card-info">
+                  <span class="label">Vendas Canceladas</span>
+                  <span class="value">{{ relatorioVendas.quantidadeCanceladas }}</span>
+                  <span class="subtitle">R$ {{ relatorioVendas.totalCanceladas | number:'1.2-2' }}</span>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+
+          <!-- Gráficos Principais -->
+          <div class="graficos-principais">
+            <mat-card class="grafico-card">
+              <mat-card-header>
+                <mat-card-title>Evolução de Vendas</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="chart-container">
+                  <canvas baseChart
+                          #vendasChart
+                          [data]="vendasLineChartData"
+                          [options]="vendasLineChartOptions"
+                          type="line">
+                  </canvas>
+                </div>
+              </mat-card-content>
+            </mat-card>
+
+            <mat-card class="grafico-card">
+              <mat-card-header>
+                <mat-card-title>Formas de Pagamento</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="chart-container">
+                  <canvas baseChart
+                          #pagamentoChart
+                          [data]="pagamentoPieChartData"
+                          [options]="pagamentoPieChartOptions"
+                          type="pie">
+                  </canvas>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Tab: Faturamento -->
+      <mat-tab label="Faturamento">
+        <div class="tab-content">
+          <div class="graficos-principais">
+            <mat-card class="grafico-card full-width">
+              <mat-card-header>
+                <mat-card-title>Faturamento por Período</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="chart-container">
+                  <canvas baseChart
+                          #faturamentoChart
+                          [data]="faturamentoBarChartData"
+                          [options]="faturamentoBarChartOptions"
+                          type="bar">
+                  </canvas>
+                </div>
+              </mat-card-content>
+            </mat-card>
+
+            <mat-card class="grafico-card">
+              <mat-card-header>
+                <mat-card-title>Faturamento por Categoria</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="chart-container">
+                  <canvas baseChart
+                          #categoriasChart
+                          [data]="categoriasPieChartData"
+                          [options]="categoriasPieChartOptions"
+                          type="pie">
+                  </canvas>
+                </div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </div>
+      </mat-tab>
+
+      <!-- Tab: Produtos -->
+      <mat-tab label="Produtos Mais Vendidos">
+        <div class="tab-content">
+          <mat-card>
+            <mat-card-header>
+              <mat-card-title>Top 10 Produtos</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <table mat-table [dataSource]="produtosDataSource" class="produtos-table">
+                <ng-container matColumnDef="posicao">
+                  <th mat-header-cell *matHeaderCellDef>#</th>
+                  <td mat-cell *matCellDef="let produto; let i = index">
+                    <span class="posicao" [class]="'pos-' + (i + 1)">{{ i + 1 }}º</span>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="descricao">
+                  <th mat-header-cell *matHeaderCellDef>Produto</th>
+                  <td mat-cell *matCellDef="let produto">
+                    <strong>{{ produto.descricao }}</strong>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="categoria">
+                  <th mat-header-cell *matHeaderCellDef>Categoria</th>
+                  <td mat-cell *matCellDef="let produto">
+                    {{ produto.categoria }}
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="quantidade">
+                  <th mat-header-cell *matHeaderCellDef>Quantidade</th>
+                  <td mat-cell *matCellDef="let produto">
+                    <strong class="quantidade">{{ produto.quantidade }}</strong>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="valorTotal">
+                  <th mat-header-cell *matHeaderCellDef>Valor Total</th>
+                  <td mat-cell *matCellDef="let produto">
+                    <strong class="valor">R$ {{ produto.valorTotal | number:'1.2-2' }}</strong>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="numeroVendas">
+                  <th mat-header-cell *matHeaderCellDef>Nº Vendas</th>
+                  <td mat-cell *matCellDef="let produto">
+                    {{ produto.numeroVendas }}
+                  </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="produtosColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: produtosColumns;"></tr>
+              </table>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+</div>

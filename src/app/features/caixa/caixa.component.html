@@ -1,0 +1,232 @@
+<div class="caixa-container">
+  <div class="header">
+    <div>
+      <h1>Gestão de Caixa</h1>
+      <p class="subtitle">Controle de abertura e fechamento de caixa</p>
+    </div>
+  </div>
+
+  <mat-tab-group>
+    <!-- Tab: Caixa Atual -->
+    <mat-tab label="Caixa Atual">
+      <div class="tab-content">
+        <!-- Caixa Fechado -->
+        <mat-card *ngIf="!caixaAtual" class="caixa-status-card fechado">
+          <mat-card-content>
+            <div class="status-content">
+              <mat-icon>lock</mat-icon>
+              <div class="status-info">
+                <h2>Caixa Fechado</h2>
+                <p>É necessário abrir o caixa para iniciar as operações.</p>
+              </div>
+            </div>
+            <button mat-raised-button color="primary" (click)="abrirCaixa()" class="action-btn">
+              <mat-icon>lock_open</mat-icon>
+              Abrir Caixa
+            </button>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Caixa Aberto -->
+        <div *ngIf="caixaAtual" class="caixa-aberto">
+          <mat-card class="caixa-status-card aberto">
+            <mat-card-content>
+              <div class="status-content">
+                <mat-icon>check_circle</mat-icon>
+                <div class="status-info">
+                  <h2>Caixa Aberto</h2>
+                  <p>Sessão #{{ caixaAtual.numeroSessao }} - Aberto em {{ caixaAtual.dataAbertura | date:'dd/MM/yyyy HH:mm' }}</p>
+                </div>
+              </div>
+              <button mat-raised-button color="warn" (click)="fecharCaixa()" class="action-btn">
+                <mat-icon>lock</mat-icon>
+                Fechar Caixa
+              </button>
+            </mat-card-content>
+          </mat-card>
+
+          <!-- Informações do Caixa -->
+          <div class="caixa-info-grid">
+            <mat-card class="info-card">
+              <mat-card-content>
+                <div class="info-header">
+                  <mat-icon>account_circle</mat-icon>
+                  <span class="label">Operador</span>
+                </div>
+                <div class="info-value">{{ caixaAtual.usuarioAbertura?.nome }}</div>
+              </mat-card-content>
+            </mat-card>
+
+            <mat-card class="info-card">
+              <mat-card-content>
+                <div class="info-header">
+                  <mat-icon>attach_money</mat-icon>
+                  <span class="label">Valor Abertura</span>
+                </div>
+                <div class="info-value">R$ {{ caixaAtual.valorAbertura | number:'1.2-2' }}</div>
+              </mat-card-content>
+            </mat-card>
+
+            <mat-card class="info-card">
+              <mat-card-content>
+                <div class="info-header">
+                  <mat-icon>shopping_cart</mat-icon>
+                  <span class="label">Vendas Realizadas</span>
+                </div>
+                <div class="info-value">{{ caixaAtual.quantidadeVendas || 0 }}</div>
+              </mat-card-content>
+            </mat-card>
+
+            <mat-card class="info-card">
+              <mat-card-content>
+                <div class="info-header">
+                  <mat-icon>trending_up</mat-icon>
+                  <span class="label">Total Vendido</span>
+                </div>
+                <div class="info-value primary">R$ {{ caixaAtual.totalVendas || 0 | number:'1.2-2' }}</div>
+              </mat-card-content>
+            </mat-card>
+          </div>
+
+          <!-- Resumo por Forma de Pagamento -->
+          <mat-card class="resumo-pagamento-card">
+            <mat-card-header>
+              <mat-card-title>Resumo por Forma de Pagamento</mat-card-title>
+            </mat-card-header>
+            <mat-card-content>
+              <div class="pagamento-grid">
+                <div class="pagamento-item">
+                  <mat-icon>payments</mat-icon>
+                  <div>
+                    <span class="label">Dinheiro</span>
+                    <span class="value">R$ {{ caixaAtual.valorDinheiro || 0 | number:'1.2-2' }}</span>
+                  </div>
+                </div>
+                <div class="pagamento-item">
+                  <mat-icon>credit_card</mat-icon>
+                  <div>
+                    <span class="label">Cartão Débito</span>
+                    <span class="value">R$ {{ caixaAtual.valorCartaoDebito || 0 | number:'1.2-2' }}</span>
+                  </div>
+                </div>
+                <div class="pagamento-item">
+                  <mat-icon>credit_card</mat-icon>
+                  <div>
+                    <span class="label">Cartão Crédito</span>
+                    <span class="value">R$ {{ caixaAtual.valorCartaoCredito || 0 | number:'1.2-2' }}</span>
+                  </div>
+                </div>
+                <div class="pagamento-item">
+                  <mat-icon>qr_code</mat-icon>
+                  <div>
+                    <span class="label">PIX</span>
+                    <span class="value">R$ {{ caixaAtual.valorPix || 0 | number:'1.2-2' }}</span>
+                  </div>
+                </div>
+              </div>
+            </mat-card-content>
+          </mat-card>
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- Tab: Histórico -->
+    <mat-tab label="Histórico">
+      <div class="tab-content">
+        <mat-card>
+          <mat-card-content>
+            <div class="table-container">
+              <table mat-table [dataSource]="dataSource" matSort>
+                <ng-container matColumnDef="numeroSessao">
+                  <th mat-header-cell *matHeaderCellDef mat-sort-header>Sessão</th>
+                  <td mat-cell *matCellDef="let caixa">
+                    <strong>#{{ caixa.numeroSessao }}</strong>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="dataAbertura">
+                  <th mat-header-cell *matHeaderCellDef mat-sort-header>Abertura</th>
+                  <td mat-cell *matCellDef="let caixa">
+                    {{ caixa.dataAbertura | date:'dd/MM/yyyy HH:mm' }}
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="usuarioAbertura">
+                  <th mat-header-cell *matHeaderCellDef>Operador</th>
+                  <td mat-cell *matCellDef="let caixa">
+                    {{ caixa.usuarioAbertura?.nome }}
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="valorAbertura">
+                  <th mat-header-cell *matHeaderCellDef>Vlr. Abertura</th>
+                  <td mat-cell *matCellDef="let caixa">
+                    R$ {{ caixa.valorAbertura | number:'1.2-2' }}
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="dataFechamento">
+                  <th mat-header-cell *matHeaderCellDef>Fechamento</th>
+                  <td mat-cell *matCellDef="let caixa">
+                    {{ caixa.dataFechamento ? (caixa.dataFechamento | date:'dd/MM/yyyy HH:mm') : '-' }}
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="valorFechamento">
+                  <th mat-header-cell *matHeaderCellDef>Vlr. Fechamento</th>
+                  <td mat-cell *matCellDef="let caixa">
+                    {{ caixa.valorFechamento ? ('R$ ' + (caixa.valorFechamento | number:'1.2-2')) : '-' }}
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="totalVendas">
+                  <th mat-header-cell *matHeaderCellDef>Total Vendas</th>
+                  <td mat-cell *matCellDef="let caixa">
+                    <strong class="valor-destaque">R$ {{ caixa.totalVendas || 0 | number:'1.2-2' }}</strong>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="status">
+                  <th mat-header-cell *matHeaderCellDef>Status</th>
+                  <td mat-cell *matCellDef="let caixa">
+                    <mat-chip [class.chip-aberto]="caixa.status === 'Aberto'"
+                              [class.chip-fechado]="caixa.status === 'Fechado'">
+                      {{ caixa.status }}
+                    </mat-chip>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="acoes">
+                  <th mat-header-cell *matHeaderCellDef>Ações</th>
+                  <td mat-cell *matCellDef="let caixa">
+                    <button mat-icon-button (click)="verDetalhes(caixa)" matTooltip="Ver Detalhes">
+                      <mat-icon>visibility</mat-icon>
+                    </button>
+                  </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+                <tr class="mat-row" *matNoDataRow>
+                  <td class="mat-cell" [attr.colspan]="displayedColumns.length">
+                    <div class="no-data">
+                      <mat-icon>account_balance_wallet</mat-icon>
+                      <p>Nenhum registro encontrado</p>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </div>
+
+            <mat-paginator 
+              [pageSizeOptions]="[10, 25, 50]"
+              [pageSize]="10"
+              showFirstLastButtons>
+            </mat-paginator>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</div>

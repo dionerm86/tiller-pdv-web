@@ -1,0 +1,229 @@
+<div class="estoque-container">
+  <div class="header">
+    <div>
+      <h1>Controle de Estoque</h1>
+      <p class="subtitle">Movimentações e ajustes de estoque</p>
+    </div>
+    <div class="action-buttons">
+      <button mat-raised-button color="primary" (click)="abrirDialogMovimentacao('entrada')">
+        <mat-icon>add_circle</mat-icon>
+        Entrada
+      </button>
+      <button mat-raised-button color="warn" (click)="abrirDialogMovimentacao('saida')">
+        <mat-icon>remove_circle</mat-icon>
+        Saída
+      </button>
+      <button mat-raised-button color="accent" (click)="abrirDialogMovimentacao('ajuste')">
+        <mat-icon>tune</mat-icon>
+        Ajustar
+      </button>
+    </div>
+  </div>
+
+  <mat-tab-group>
+    <!-- Tab: Movimentações -->
+    <mat-tab label="Movimentações">
+      <div class="tab-content">
+        <!-- Filtros -->
+        <mat-card class="filtros-card">
+          <mat-card-content>
+            <form [formGroup]="filtrosForm" class="filtros-form">
+              <mat-form-field appearance="outline">
+                <mat-label>Data Início</mat-label>
+                <input matInput [matDatepicker]="pickerInicio" formControlName="dataInicio">
+                <mat-datepicker-toggle matIconSuffix [for]="pickerInicio"></mat-datepicker-toggle>
+                <mat-datepicker #pickerInicio></mat-datepicker>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Data Fim</mat-label>
+                <input matInput [matDatepicker]="pickerFim" formControlName="dataFim">
+                <mat-datepicker-toggle matIconSuffix [for]="pickerFim"></mat-datepicker-toggle>
+                <mat-datepicker #pickerFim></mat-datepicker>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Tipo de Movimento</mat-label>
+                <mat-select formControlName="tipoMovimento">
+                  <mat-option value="">Todos</mat-option>
+                  <mat-option value="Entrada">Entrada</mat-option>
+                  <mat-option value="Saida">Saída</mat-option>
+                  <mat-option value="Ajuste">Ajuste</mat-option>
+                  <mat-option value="Devolucao">Devolução</mat-option>
+                  <mat-option value="Perda">Perda</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <button mat-raised-button color="primary" (click)="aplicarFiltros()">
+                <mat-icon>filter_list</mat-icon>
+                Filtrar
+              </button>
+
+              <button mat-stroked-button (click)="limparFiltros()">
+                <mat-icon>clear</mat-icon>
+                Limpar
+              </button>
+            </form>
+
+            <!-- Resumo -->
+            <div class="resumo-movimentacoes" *ngIf="resumo">
+              <div class="resumo-item entrada">
+                <mat-icon>arrow_upward</mat-icon>
+                <div>
+                  <span class="label">Entradas</span>
+                  <span class="value">{{ resumo.totalEntradas }}</span>
+                </div>
+              </div>
+              <div class="resumo-item saida">
+                <mat-icon>arrow_downward</mat-icon>
+                <div>
+                  <span class="label">Saídas</span>
+                  <span class="value">{{ resumo.totalSaidas }}</span>
+                </div>
+              </div>
+              <div class="resumo-item ajuste">
+                <mat-icon>tune</mat-icon>
+                <div>
+                  <span class="label">Ajustes</span>
+                  <span class="value">{{ resumo.totalAjustes }}</span>
+                </div>
+              </div>
+              <div class="resumo-item devolucao">
+                <mat-icon>keyboard_return</mat-icon>
+                <div>
+                  <span class="label">Devoluções</span>
+                  <span class="value">{{ resumo.totalDevolucoes }}</span>
+                </div>
+              </div>
+              <div class="resumo-item perda">
+                <mat-icon>warning</mat-icon>
+                <div>
+                  <span class="label">Perdas</span>
+                  <span class="value">{{ resumo.totalPerdas }}</span>
+                </div>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Tabela de Movimentações -->
+        <mat-card>
+          <mat-card-content>
+            <div class="table-container">
+              <table mat-table [dataSource]="dataSource" matSort>
+                <ng-container matColumnDef="dataHora">
+                  <th mat-header-cell *matHeaderCellDef mat-sort-header>Data/Hora</th>
+                  <td mat-cell *matCellDef="let mov">
+                    {{ mov.dataHora | date:'dd/MM/yyyy HH:mm' }}
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="produto">
+                  <th mat-header-cell *matHeaderCellDef>Produto</th>
+                  <td mat-cell *matCellDef="let mov">
+                    <strong>{{ mov.produtoDescricao }}</strong>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="tipoMovimento">
+                  <th mat-header-cell *matHeaderCellDef>Tipo</th>
+                  <td mat-cell *matCellDef="let mov">
+                    <mat-chip [class]="'chip-' + mov.tipoMovimento.toLowerCase()">
+                      {{ formatarTipoMovimento(mov.tipoMovimento) }}
+                    </mat-chip>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="quantidade">
+                  <th mat-header-cell *matHeaderCellDef mat-sort-header>Quantidade</th>
+                  <td mat-cell *matCellDef="let mov">
+                    <strong class="quantidade">{{ mov.quantidade }}</strong>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="quantidadeAnterior">
+                  <th mat-header-cell *matHeaderCellDef>Anterior</th>
+                  <td mat-cell *matCellDef="let mov">
+                    {{ mov.quantidadeAnterior }}
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="quantidadeAtual">
+                  <th mat-header-cell *matHeaderCellDef>Atual</th>
+                  <td mat-cell *matCellDef="let mov">
+                    <strong>{{ mov.quantidadeAtual }}</strong>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="usuario">
+                  <th mat-header-cell *matHeaderCellDef>Usuário</th>
+                  <td mat-cell *matCellDef="let mov">
+                    {{ mov.usuarioNome }}
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="motivo">
+                  <th mat-header-cell *matHeaderCellDef>Motivo</th>
+                  <td mat-cell *matCellDef="let mov">
+                    <span class="motivo">{{ mov.motivo || '-' }}</span>
+                  </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+
+                <tr class="mat-row" *matNoDataRow>
+                  <td class="mat-cell" [attr.colspan]="displayedColumns.length">
+                    <div class="no-data">
+                      <mat-icon>inventory</mat-icon>
+                      <p>Nenhuma movimentação encontrada</p>
+                    </div>
+                  </td>
+                </tr>
+              </table>
+            </div>
+
+            <mat-paginator 
+              [pageSizeOptions]="[10, 25, 50, 100]"
+              [pageSize]="25"
+              showFirstLastButtons>
+            </mat-paginator>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+
+    <!-- Tab: Estoque Baixo -->
+    <mat-tab label="Estoque Baixo">
+      <div class="tab-content">
+        <mat-card>
+          <mat-card-content>
+            <div class="produtos-baixo" *ngIf="produtosEstoqueBaixo.length > 0">
+              <div class="produto-card" *ngFor="let produto of produtosEstoqueBaixo">
+                <div class="produto-info">
+                  <strong>{{ produto.descricao }}</strong>
+                  <small>Categoria: {{ produto.categoria?.nome }}</small>
+                </div>
+                <div class="produto-estoque">
+                  <span class="estoque-atual" [class.critico]="produto.estoqueAtual === 0">
+                    {{ produto.estoqueAtual }} {{ produto.unidadeMedida }}
+                  </span>
+                  <small>Mínimo: {{ produto.estoqueMinimo }}</small>
+                </div>
+                <button mat-icon-button color="primary" 
+                        (click)="abrirDialogMovimentacao('entrada')"
+                        matTooltip="Adicionar Estoque">
+                  <mat-icon>add_circle</mat-icon>
+                </button>
+              </div>
+            </div>
+            <div class="no-data" *ngIf="produtosEstoqueBaixo.length === 0">
+              <mat-icon>check_circle</mat-icon>
+              <p>Nenhum produto com estoque baixo</p>
+              <small>Todos os produtos estão com estoque adequado</small>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
