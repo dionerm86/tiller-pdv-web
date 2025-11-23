@@ -51,10 +51,26 @@ export const routes: Routes = [
         loadComponent: () => import('./features/configuracoes/configuracoes.component').then(m => m.ConfiguracoesComponent)
       },
       {
+        path: 'usuarios',
+        loadChildren: () => import('./features/configuracoes/usuarios/usuarios-list/usuarios-list.component').then(m => m.UsuariosListComponent),
+     },
+     {
+        path: 'configuracoes/usuarios',
+        loadComponent: () => import('./features/configuracoes/usuarios/usuarios-list/usuarios-list.component').then(m => m.UsuariosListComponent)
+      },
+      {
+        path: 'configuracoes/usuarios/novo',
+        loadComponent: () => import('./features/configuracoes/usuarios/usuario-form/usuario-form-component').then(m => m.UsuarioFormComponent)
+      },
+      {
+        path: 'configuracoes/usuarios/:id',
+        loadComponent: () => import('./features/configuracoes/usuarios/usuario-form/usuario-form-component').then(m => m.UsuarioFormComponent)
+      },
+      {
         path: '',
         redirectTo: 'dashboard',
         pathMatch: 'full'
-      }
+      },
     ]
   },
   

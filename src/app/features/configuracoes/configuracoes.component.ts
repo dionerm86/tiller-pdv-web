@@ -292,7 +292,8 @@ export class ConfiguracoesComponent {
         { 
           name: 'Usuários do Sistema', 
           description: 'Adicionar, editar ou remover usuários',
-          status: 'active'
+          status: 'active',
+          route: '/configuracoes/usuarios'
         },
         { 
           name: 'Perfis de Acesso', 

@@ -1,0 +1,100 @@
+<div class="form-container">
+  <div class="header">
+    <div>
+      <h1>{{ isEdicao ? 'Editar Usuário' : 'Novo Usuário' }}</h1>
+      <p class="subtitle">Preencha os dados abaixo</p>
+    </div>
+    <button mat-stroked-button routerLink="/configuracoes/usuarios">
+      <mat-icon>arrow_back</mat-icon>
+      Voltar
+    </button>
+  </div>
+
+  <mat-card>
+    <mat-card-content>
+      <form [formGroup]="form" (ngSubmit)="salvar()">
+        
+        <div class="section-title">Dados Pessoais</div>
+        
+        <div class="grid-row">
+          <mat-form-field appearance="outline">
+            <mat-label>Nome Completo</mat-label>
+            <input matInput formControlName="nome" placeholder="Ex: João Silva">
+            <mat-icon matSuffix>person</mat-icon>
+            <mat-error *ngIf="f['nome'].invalid">{{ getErrorMessage('nome') }}</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>E-mail</mat-label>
+            <input matInput formControlName="email" type="email" placeholder="Ex: joao@email.com">
+            <mat-icon matSuffix>email</mat-icon>
+            <mat-error *ngIf="f['email'].invalid">{{ getErrorMessage('email') }}</mat-error>
+          </mat-form-field>
+        </div>
+
+        <div class="grid-row">
+          <mat-form-field appearance="outline">
+            <mat-label>CPF</mat-label>
+            <input matInput formControlName="cpf" placeholder="000.000.000-00">
+            <mat-icon matSuffix>badge</mat-icon>
+            <mat-error *ngIf="f['cpf'].invalid">{{ getErrorMessage('cpf') }}</mat-error>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Perfil de Acesso</mat-label>
+            <mat-select formControlName="perfil">
+              <mat-option *ngFor="let perfil of perfis" [value]="perfil">
+                {{ perfil }}
+              </mat-option>
+            </mat-select>
+            <mat-error *ngIf="f['perfil'].invalid">{{ getErrorMessage('perfil') }}</mat-error>
+          </mat-form-field>
+        </div>
+
+        <mat-divider class="divider-spacing"></mat-divider>
+
+        <div *ngIf="!isEdicao">
+          <div class="section-title">Segurança</div>
+          
+          <div class="grid-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Senha</mat-label>
+              <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="senha">
+              <button mat-icon-button matSuffix type="button" (click)="hidePassword = !hidePassword">
+                <mat-icon>{{hidePassword ? 'visibility_off' : 'visibility'}}</mat-icon>
+              </button>
+              <mat-error *ngIf="f['senha'].invalid">{{ getErrorMessage('senha') }}</mat-error>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Confirmar Senha</mat-label>
+              <input matInput [type]="hideConfirmPassword ? 'password' : 'text'" formControlName="confirmarSenha">
+              <button mat-icon-button matSuffix type="button" (click)="hideConfirmPassword = !hideConfirmPassword">
+                <mat-icon>{{hideConfirmPassword ? 'visibility_off' : 'visibility'}}</mat-icon>
+              </button>
+              <mat-error *ngIf="f['confirmarSenha'].invalid">{{ getErrorMessage('confirmarSenha') }}</mat-error>
+            </mat-form-field>
+          </div>
+          
+          <mat-divider class="divider-spacing"></mat-divider>
+        </div>
+
+        <div class="status-toggle">
+          <mat-slide-toggle formControlName="ativo" color="primary">
+            Usuário Ativo
+          </mat-slide-toggle>
+        </div>
+
+        <div class="actions">
+          <button mat-button type="button" routerLink="/configuracoes/usuarios">Cancelar</button>
+          <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid || loading">
+            <mat-icon *ngIf="!loading">save</mat-icon>
+            <mat-icon *ngIf="loading" class="spin">refresh</mat-icon>
+            {{ loading ? 'Salvando...' : 'Salvar Usuário' }}
+          </button>
+        </div>
+
+      </form>
+    </mat-card-content>
+  </mat-card>
+</div>
