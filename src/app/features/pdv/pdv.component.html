@@ -1,0 +1,181 @@
+<div class="pdv-container">
+  
+  <!-- Caixa Fechado -->
+  <mat-card *ngIf="!caixaAberto" class="caixa-fechado-card">
+    <mat-card-header>
+      <mat-icon class="warning-icon">warning</mat-icon>
+      <mat-card-title>Caixa Fechado</mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <p>É necessário abrir o caixa antes de iniciar as vendas.</p>
+      <button mat-raised-button color="primary" (click)="abrirCaixa()">
+        <mat-icon>account_balance_wallet</mat-icon> Abrir Caixa
+      </button>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Conteúdo PDV (Só exibe se caixa aberto) -->
+  <div *ngIf="caixaAberto" class="pdv-content">
+    
+    <!-- Async Pipe Resolve a Venda aqui -->
+    <ng-container *ngIf="venda$ | async as venda">
+      
+      <div class="pdv-left">
+        <mat-card class="search-card">
+          <mat-card-header>
+            <mat-card-title>Buscar Produto</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Código de Barras / Nome</mat-label>
+              <input matInput #buscaInput 
+                     [(ngModel)]="termoBusca"
+                     (keyup.enter)="buscarProdutoManual()"
+                     [disabled]="loading"
+                     placeholder="Digite ou escaneie o código"
+                     autocomplete="off">
+              <mat-icon matPrefix>search</mat-icon>
+              
+              <!-- Loader Correto -->
+              <div class="loader-mini" *ngIf="loading">
+                 <mat-spinner diameter="20"></mat-spinner>
+              </div>
+              
+              <button mat-icon-button matSuffix (click)="buscarProdutoManual()" [disabled]="loading">
+                <mat-icon>send</mat-icon>
+              </button>
+            </mat-form-field>
+
+            <div class="quick-actions">
+              <button mat-stroked-button (click)="limparVenda()">
+                <mat-icon>clear</mat-icon> Limpar Venda
+              </button>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <!-- Lista de Itens -->
+        <mat-card class="itens-card">
+          <mat-card-header>
+            <mat-card-title>Itens da Venda</mat-card-title>
+            <span class="items-count">{{ venda.itens?.length || 0 }} itens</span>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="itens-list">
+              
+              <div *ngIf="!venda.itens || venda.itens.length === 0" class="empty-state">
+                <mat-icon>shopping_cart</mat-icon>
+                <p>Nenhum item adicionado</p>
+                <small>Escaneie ou busque produtos</small>
+              </div>
+
+              <div *ngFor="let item of venda.itens; let i = index" class="item-row">
+                <div class="item-info">
+                  <strong>{{ item.descricao }}</strong>
+                  <div class="item-details">
+                    <span class="quantity">{{ item.quantidade | number:'1.3-3' }}x</span>
+                    <span class="price">R$ {{ item.precoUnitario | number:'1.2-2' }}</span>
+                  </div>
+                </div>
+                <div class="item-actions">
+                  <span class="subtotal">R$ {{ item.subtotal | number:'1.2-2' }}</span>
+                  <button mat-icon-button color="warn" (click)="removerItem(i)">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+      <!-- Totais e Pagamento -->
+      <div class="pdv-right">
+        <mat-card class="total-card">
+          <mat-card-content>
+            <div class="total-section">
+              <div class="total-row">
+                <span>Subtotal:</span>
+                <span class="value">R$ {{ venda.valorBruto | number:'1.2-2' }}</span>
+              </div>
+              <div class="total-row">
+                <span>Desconto:</span>
+                <span class="value discount">- R$ {{ venda.valorDesconto | number:'1.2-2' }}</span>
+              </div>
+              <mat-divider></mat-divider>
+              <div class="total-row total-final">
+                <span>TOTAL:</span>
+                <span class="value-final">R$ {{ venda.valorTotal | number:'1.2-2' }}</span>
+              </div>
+            </div>
+
+            <div class="discount-section">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Desconto (R$)</mat-label>
+                <!-- Atualiza o objeto e recalcula -->
+                <input matInput type="number" 
+       [ngModel]="venda.valorDesconto" 
+       (ngModelChange)="venda.valorDesconto = $event; calcularTotaisUsuario()"
+       min="0">
+                <mat-icon matPrefix>local_offer</mat-icon>
+              </mat-form-field>
+            </div>
+
+            <!-- Pagamento -->
+            <div class="payment-section">
+              <mat-form-field appearance="outline" class="full-width">
+                <mat-label>Forma de Pagamento</mat-label>
+                <mat-select [(ngModel)]="formaPagamentoSelecionada">
+                  <mat-option value="Dinheiro"><mat-icon>payments</mat-icon> Dinheiro</mat-option>
+                  <mat-option value="CartaoDebito"><mat-icon>credit_card</mat-icon> Cartão Débito</mat-option>
+                  <mat-option value="CartaoCredito"><mat-icon>credit_card</mat-icon> Cartão Crédito</mat-option>
+                  <mat-option value="Pix"><mat-icon>qr_code</mat-icon> PIX</mat-option>
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field *ngIf="formaPagamentoSelecionada === 'Dinheiro'" appearance="outline" class="full-width">
+                <mat-label>Valor Pago</mat-label>
+                <input matInput type="number" [(ngModel)]="valorPagoInput" min="0">
+                <span matPrefix>R$&nbsp;</span>
+              </mat-form-field>
+
+              <div *ngIf="formaPagamentoSelecionada === 'Dinheiro' && valorPagoInput > 0" class="troco-info">
+                <mat-icon>attach_money</mat-icon>
+                <div>
+                  <strong>Troco:</strong>
+                  <span class="troco-valor">R$ {{ calcularTroco(venda) | number:'1.2-2' }}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="action-buttons">
+              <button mat-raised-button color="warn" (click)="cancelarVenda()" [disabled]="!venda.itens || venda.itens.length === 0">
+                <mat-icon>cancel</mat-icon> Cancelar
+              </button>
+              <button mat-raised-button color="primary" 
+        (click)="finalizarVenda()"
+        [disabled]="!podeFinalizarVenda(venda) || loading"
+        class="finalizar-btn">
+                <mat-icon>check_circle</mat-icon> Finalizar (F12)
+              </button>
+            </div>
+          </mat-card-content>
+        </mat-card>
+
+        <mat-card class="caixa-info-card">
+          <mat-card-content>
+            <div class="caixa-info">
+              <mat-icon>account_balance_wallet</mat-icon>
+              <div>
+                <strong>Caixa #{{ caixaAberto.id }}</strong>
+                <small>Aberto em {{ caixaAberto.dataAbertura | date:'dd/MM HH:mm' }}</small>
+              </div>
+            </div>
+          </mat-card-content>
+        </mat-card>
+      </div>
+
+    </ng-container>
+  </div>
+</div>

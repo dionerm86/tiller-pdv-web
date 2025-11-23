@@ -3,6 +3,11 @@ import { Observable } from 'rxjs';
 import { ApiService } from './api.service';
 import { Caixa } from '../model/caixa.model';
 
+// DTO para abertura de caixa (alinhado com o Backend C#)
+export interface AbrirCaixaDto {
+  valorInicial: number;
+}
+
 @Injectable({
   providedIn: 'root'
 })
@@ -13,8 +18,8 @@ export class CaixaService {
     return this.api.get<Caixa>('caixa/aberto');
   }
 
-  abrir(valorAbertura: number): Observable<Caixa> {
-    return this.api.post<Caixa>('caixa/abrir', { valorAbertura });
+  abrir(dto: AbrirCaixaDto): Observable<Caixa> {
+    return this.api.post<Caixa>('caixa/abrir', dto);
   }
 
   fechar(id: number): Observable<Caixa> {

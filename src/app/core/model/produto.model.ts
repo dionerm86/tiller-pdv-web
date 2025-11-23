@@ -6,7 +6,7 @@ export interface Produto {
   descricaoDetalhada?: string;
   categoriaId: number;
   categoria?: Categoria;
-  unidadeMedida: 'UN' | 'KG' | 'LT' | 'MT' | 'CX' | 'PC';
+  unidadeMedida: number;
   precoCompra: number;
   precoVenda: number;
   margemLucro?: number;
@@ -29,4 +29,13 @@ export interface Categoria {
   nome: string;
   descricao?: string;
   ativo: boolean;
+}
+
+export enum UnidadeMedida {
+  UN = 0,
+  KG = 1,
+  LT = 2,
+  MT = 3,
+  CX = 4,
+  PC = 5
 }
