@@ -67,6 +67,10 @@ export const routes: Routes = [
         loadComponent: () => import('./features/configuracoes/usuarios/usuario-form/usuario-form-component').then(m => m.UsuarioFormComponent)
       },
       {
+        path: 'configuracoes/logs',
+        loadComponent: () => import('./features/configuracoes/logs/logs-list/logs-list.component').then(m => m.LogsListComponent)
+      },
+      {
         path: '',
         redirectTo: 'dashboard',
         pathMatch: 'full'

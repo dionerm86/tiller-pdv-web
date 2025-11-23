@@ -303,7 +303,8 @@ export class ConfiguracoesComponent {
         { 
           name: 'Logs de Auditoria', 
           description: 'Histórico de ações no sistema',
-          status: 'pending'
+          status: 'active', 
+          route: '/configuracoes/logs'
         }
       ]
     },
