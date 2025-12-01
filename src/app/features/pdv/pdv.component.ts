@@ -381,20 +381,28 @@ export class PdvComponent implements OnInit, OnDestroy {
   abrirCaixa(): void {
     import('./abrir-caixa-dialog/abrir-caixa-dialog.component').then(m => {
       const dialogRef = this.dialog.open(m.AbrirCaixaDialogComponent, {
-        width: '400px', disableClose: true
+        width: '400px', 
+        disableClose: true
       });
 
-      dialogRef.afterClosed().subscribe(val => {
-        if (val !== undefined) {
-          this.caixaService.abrir(val).subscribe({
+      dialogRef.afterClosed().subscribe(valorAbertura => {
+        if (valorAbertura !== undefined && valorAbertura !== null) {
+          
+          const dto = { valorInicial: valorAbertura };
+
+          this.caixaService.abrir(dto).subscribe({
             next: (c) => { 
               this.caixaAberto = c; 
               this.showMessage('Caixa aberto!', 'success'); 
+              
               const venda = this.vendaAtual;
               venda.caixaId = c.id!;
               this.vendaSubject.next(venda);
             },
-            error: () => this.showMessage('Erro ao abrir caixa', 'error')
+            error: (err) => {
+              console.error(err);
+              this.showMessage('Erro ao abrir caixa', 'error');
+            }
           });
         }
       });
