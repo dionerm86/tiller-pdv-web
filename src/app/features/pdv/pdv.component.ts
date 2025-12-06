@@ -65,9 +65,9 @@ export class PdvComponent implements OnInit, OnDestroy {
 
   caixaAberto: Caixa | null = null;
   loading = false;
-  codigoBarras: string = ''; 
-  termoBusca: string = ''; 
-  
+  codigoBarras: string = '';
+  termoBusca: string = '';
+
   formaPagamentoSelecionada: string = 'Dinheiro';
   valorPagoInput: number = 0;
 
@@ -141,36 +141,36 @@ export class PdvComponent implements OnInit, OnDestroy {
 
     this.setLoading(true);
 
-    // 1. Verifica se é um código de Balança (Começa com 2 e tem 12 ou 13 dígitos numéricos)
+    // 1. Tenta interpretar como código de balança
     const dadosBalanca = this.balancaService.interpretarCodigo(termo);
 
     if (dadosBalanca.isPesavel) {
-      // Fluxo Balança
+      console.log('Detectado Balança:', dadosBalanca);
+      // Fluxo Balança: Passamos o Valor Total (em Reais) lido da etiqueta
       this.buscarProdutoPorId(dadosBalanca.codigoProduto, dadosBalanca.valorTotal);
-    
-    } else if (/^\d+$/.test(termo)) { 
-      // 2. É APENAS NÚMEROS? -> Busca por Código de Barras (EAN)
+
+    } else if (/^\d+$/.test(termo)) {
+      // 2. Fluxo EAN Padrão (Numérico)
       this.produtoService.getByCodigoBarras(termo)
         .pipe(finalize(() => this.setLoading(false)))
         .subscribe({
           next: (produto) => {
+            console.log('Produto retornado API:', produto); // <--- LOG NO LUGAR CERTO
+
             if (produto) {
               this.processarProdutoEncontrado(produto);
               this.termoBusca = '';
             } else {
-              // Se retornou 200 OK mas null (caso raro), tenta por nome ou avisa
               this.buscarPorNome(termo);
             }
           },
           error: () => {
-            // Se não achou o código (404), tenta buscar por nome (vai que o nome é um número...)
             this.buscarPorNome(termo);
           }
         });
 
     } else {
-      // 3. CONTÉM LETRAS? -> Busca Direta por Nome (Pula o erro de código de barras)
-      // Aqui resolvemos o problema do "Feijão"
+      // 3. Fluxo Texto (Nome)
       this.buscarPorNome(termo);
     }
   }
@@ -225,32 +225,34 @@ export class PdvComponent implements OnInit, OnDestroy {
 
     const preco = Number(produto.precoVenda) || 0;
     const idProduto = Number(produto.id);
-    
-    // CORREÇÃO AQUI:
-    // O Backend manda números: 0 (UN), 1 (KG), 2 (LT), 3 (MT)
-    const unidade = Number(produto.unidadeMedida); 
-    
-    // Lista de IDs que são pesáveis (1=KG, 2=LT, 3=MT)
-    // Verifique no seu Enum do C# se LT e MT também devem ser fracionados
-    const isPesavel = [1, 2, 3].includes(unidade);
+
+    // CORREÇÃO CRÍTICA: O Backend manda "KG" (String), não número.
+    const unidadeRaw = String(produto.unidadeMedida || 'UN').toUpperCase().trim();
+
+    // Verifica se é pesável baseado na string
+    const isPesavel = ['KG', 'LT', 'MT'].includes(unidadeRaw);
+
+    console.log(`Debug Cálculo: Produto=${produto.descricao}, Unidade=${unidadeRaw}, É Pesável?=${isPesavel}, ValorEtiqueta=${valorEtiqueta}`);
 
     let quantidade = 1;
     let subtotal = preco;
 
-    if (isPesavel && valorEtiqueta && valorEtiqueta > 0 && preco > 0) {
-      quantidade = valorEtiqueta / preco;
+    // Se for pesável (KG) e tivermos um valor vindo da etiqueta (R$)
+    if (isPesavel && valorEtiqueta !== undefined && valorEtiqueta > 0 && preco > 0) {
+      // O subtotal é o valor da etiqueta (ex: R$ 5,00)
       subtotal = valorEtiqueta;
+
+      // A quantidade (peso) é calculada: R$ 5,00 / R$ 20,00 = 0.250 Kg
+      quantidade = valorEtiqueta / preco;
+
+      // Arredonda para 3 casas decimais para evitar dízimas infinitas (0.33333)
+      quantidade = parseFloat(quantidade.toFixed(3));
     }
-    
-    // Para exibição na tela (transformar 1 em 'KG', 0 em 'UN')
-    // Podemos criar um helper simples aqui ou usar um Pipe no futuro
-    const unidadeDescricao = this.getUnidadeDescricao(unidade);
 
     return {
       produtoId: idProduto,
       produto: produto,
-      // Adicionamos a unidade na descrição para facilitar conferencia visual
-      descricao: `${produto.descricao || 'Item'} (${unidadeDescricao})`,
+      descricao: `${produto.descricao || 'Item'} (${unidadeRaw})`,
       quantidade: quantidade,
       precoUnitario: preco,
       valorDesconto: 0,
@@ -270,10 +272,10 @@ export class PdvComponent implements OnInit, OnDestroy {
         default: return 'UN';
     }
   }
-  
+
   adicionarItemAoCarrinho(item: ItemVenda): void {
     const venda = this.vendaSubject.value;
-    
+
     // Garante array
     const itensAtuais = venda.itens || [];
     const novaListaItens = [...itensAtuais]; // Imutabilidade
@@ -289,7 +291,7 @@ export class PdvComponent implements OnInit, OnDestroy {
 
     venda.itens = novaListaItens;
     this.atualizarEstadoVenda(venda);
-    
+
     // Feedback visual
     this.showMessage(`${item.descricao} adicionado!`, 'success');
   }
@@ -313,10 +315,10 @@ export class PdvComponent implements OnInit, OnDestroy {
   private atualizarEstadoVenda(venda: Venda): void {
     const itens = venda.itens || [];
     const subtotal = itens.reduce((sum, item) => sum + (item.subtotal || 0), 0);
-    
+
     venda.valorBruto = parseFloat(subtotal.toFixed(2));
     venda.valorTotal = Math.max(0, venda.valorBruto - (venda.valorDesconto || 0));
-    
+
     // Emite novo estado
     this.vendaSubject.next({ ...venda });
   }
@@ -350,7 +352,7 @@ export class PdvComponent implements OnInit, OnDestroy {
     vendaAtual.status = 'Concluida';
 
     this.setLoading(true);
-    
+
     this.vendaService.registrar(vendaAtual)
       .pipe(finalize(() => this.setLoading(false)))
       .subscribe({
@@ -381,20 +383,20 @@ export class PdvComponent implements OnInit, OnDestroy {
   abrirCaixa(): void {
     import('./abrir-caixa-dialog/abrir-caixa-dialog.component').then(m => {
       const dialogRef = this.dialog.open(m.AbrirCaixaDialogComponent, {
-        width: '400px', 
+        width: '400px',
         disableClose: true
       });
 
       dialogRef.afterClosed().subscribe(valorAbertura => {
         if (valorAbertura !== undefined && valorAbertura !== null) {
-          
+
           const dto = { valorInicial: valorAbertura };
 
           this.caixaService.abrir(dto).subscribe({
-            next: (c) => { 
-              this.caixaAberto = c; 
-              this.showMessage('Caixa aberto!', 'success'); 
-              
+            next: (c) => {
+              this.caixaAberto = c;
+              this.showMessage('Caixa aberto!', 'success');
+
               const venda = this.vendaAtual;
               venda.caixaId = c.id!;
               this.vendaSubject.next(venda);
@@ -417,9 +419,9 @@ export class PdvComponent implements OnInit, OnDestroy {
   setupKeyboardShortcuts(): void {
     document.addEventListener('keydown', (e) => {
       if (e.key === 'F2') { e.preventDefault(); this.buscaInput?.nativeElement.focus(); }
-      else if (e.key === 'F12') { 
-        e.preventDefault(); 
-        if (this.podeFinalizarVenda(this.vendaAtual)) this.finalizarVenda(); 
+      else if (e.key === 'F12') {
+        e.preventDefault();
+        if (this.podeFinalizarVenda(this.vendaAtual)) this.finalizarVenda();
       }
     });
   }

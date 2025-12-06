@@ -1,8 +1,8 @@
 import { Injectable } from '@angular/core';
 
 export interface DadosBalanca {
-  codigoProduto: number; // O ID do produto (ex: 50)
-  valorTotal: number;    // O valor em reais (ex: 5.00)
+  codigoProduto: number;
+  valorTotal: number; // <--- Voltamos a chamar de Valor Total
   isPesavel: boolean;
 }
 
@@ -11,36 +11,38 @@ export interface DadosBalanca {
 })
 export class BalancaService {
 
-  constructor() { }
-
-  /**
-   * Analisa um código de barras EAN-13 e extrai informações se for de balança (prefixo 2).
-   * Padrão utilizado: 2 CCCCC VVVVV D (12 dígitos de dados + 1 de verificação)
-   */
   interpretarCodigo(codigoBarra: string): DadosBalanca {
-    // 1. Validação estrita EAN-13 de Balança
-    if (!codigoBarra || codigoBarra.length !== 13 || !codigoBarra.startsWith('2')) {
+    const codigo = codigoBarra ? codigoBarra.trim() : '';
+
+    if (!codigo || !codigo.startsWith('2') || (codigo.length !== 12 && codigo.length !== 13)) {
       return { codigoProduto: 0, valorTotal: 0, isPesavel: false };
     }
 
     try {
-      // CCCCC (Produto ID): Posições 1 a 5 (índices 1 a 5)
-      const codigoStr = codigoBarra.substring(1, 6); 
-      const codigoProduto = parseInt(codigoStr, 10);
+      let codigoProduto: number;
+      let valorTotalReais: number;
 
-      // VVVVV (Valor em Centavos): Posições 6 a 10 (índices 6 a 10)
-      const valorStr = codigoBarra.substring(6, 11); 
-      const valorTotal = parseInt(valorStr, 10) / 100; // Divide por 100 para Reais
+      // Extrai o Valor em Centavos (não mais peso em gramas)
+      // Ex: 00500 -> 500 centavos -> R$ 5,00
 
-      // O dígito verificador (índice 11) é ignorado para o cálculo.
+      if (codigo.length === 12) {
+        // Padrão 12: 2 CCCCC VVVVV D
+        codigoProduto = parseInt(codigo.substring(1, 6), 10);
+        const valorCentavos = parseInt(codigo.substring(6, 11), 10);
+        valorTotalReais = valorCentavos / 100;
+      } else {
+        // Padrão 13: 2 CCCCC I VVVVV D
+        codigoProduto = parseInt(codigo.substring(1, 6), 10);
+        const valorCentavos = parseInt(codigo.substring(7, 12), 10);
+        valorTotalReais = valorCentavos / 100;
+      }
 
       return {
         codigoProduto,
-        valorTotal,
+        valorTotal: valorTotalReais,
         isPesavel: true
       };
-    } catch (error) {
-      console.error('Erro ao interpretar código de balança', error);
+    } catch {
       return { codigoProduto: 0, valorTotal: 0, isPesavel: false };
     }
   }
