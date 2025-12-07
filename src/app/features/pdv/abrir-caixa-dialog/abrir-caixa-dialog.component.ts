@@ -33,7 +33,7 @@ import { MatIconModule } from '@angular/material/icon';
 
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Valor de Abertura</mat-label>
-          <input matInput type="number" formControlName="valorAbertura" 
+          <input matInput type="number" formControlName="valorAbertura"
                  placeholder="100.00" step="0.01" min="0" autofocus>
           <span matPrefix>R$&nbsp;</span>
           <mat-icon matPrefix>attach_money</mat-icon>
@@ -67,8 +67,8 @@ import { MatIconModule } from '@angular/material/icon';
 
     <mat-dialog-actions align="end">
       <button mat-button (click)="cancelar()">Cancelar</button>
-      <button mat-raised-button color="primary" 
-              (click)="confirmar()" 
+      <button mat-raised-button color="primary"
+              (click)="confirmar()"
               [disabled]="!form.valid">
         <mat-icon>check_circle</mat-icon>
         Abrir Caixa

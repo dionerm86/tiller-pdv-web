@@ -26,8 +26,9 @@ import { BalancaService } from '../../core/services/balanca.service';
 
 // Models
 import { Produto } from '../../core/model/produto.model';
-import { ItemVenda, Venda } from '../../core/model/venda.model';
+import { Cliente, ItemVenda, Venda } from '../../core/model/venda.model';
 import { Caixa } from '../../core/model/caixa.model';
+import { ImpressaoService } from 'src/app/core/services/impressao.service';
 
 export enum FormaPagamentoId {
   Dinheiro = 1,
@@ -67,7 +68,7 @@ export class PdvComponent implements OnInit, OnDestroy {
   loading = false;
   codigoBarras: string = '';
   termoBusca: string = '';
-
+ clienteSelecionado: Cliente | null = null;
   formaPagamentoSelecionada: string = 'Dinheiro';
   valorPagoInput: number = 0;
 
@@ -87,7 +88,8 @@ export class PdvComponent implements OnInit, OnDestroy {
     private balancaService: BalancaService,
     private dialog: MatDialog,
     private snackBar: MatSnackBar,
-    private cdr: ChangeDetectorRef // <--- Injeção para forçar atualização da tela
+    private cdr: ChangeDetectorRef, // <--- Injeção para forçar atualização da tela
+    private impressaoService: ImpressaoService
   ) {
     const vendaInicial = this.criarVendaVazia();
     this.vendaSubject = new BehaviorSubject<Venda>(vendaInicial);
@@ -339,36 +341,48 @@ export class PdvComponent implements OnInit, OnDestroy {
 
   finalizarVenda(): void {
     if (!this.caixaAberto) {
-        this.showMessage('Caixa está fechado!', 'error');
+        this.showMessage('Caixa Fechado!', 'error');
         return;
     }
 
-    const vendaAtual = this.vendaSubject.value;
-    vendaAtual.caixaId = this.caixaAberto.id!;
-    vendaAtual.formaPagamento = this.formaPagamentoSelecionada;
-    vendaAtual.formaPagamentoId = (FormaPagamentoId as any)[this.formaPagamentoSelecionada] || 1;
-    vendaAtual.valorPago = this.formaPagamentoSelecionada === 'Dinheiro' ? this.valorPagoInput : vendaAtual.valorTotal;
-    vendaAtual.valorTroco = this.calcularTroco(vendaAtual);
-    vendaAtual.status = 'Concluida';
+    const venda = this.vendaSubject.value;
+    // ... (preparação do objeto venda mantém igual) ...
+    venda.caixaId = this.caixaAberto.id!;
+    venda.formaPagamento = this.formaPagamentoSelecionada;
+    venda.formaPagamentoId = (FormaPagamentoId as any)[this.formaPagamentoSelecionada] || 1;
+    venda.valorPago = this.formaPagamentoSelecionada === 'Dinheiro' ? this.valorPagoInput : venda.valorTotal;
+    venda.valorTroco = this.calcularTroco(venda);
+    venda.status = 'Concluida';
 
     this.setLoading(true);
 
-    this.vendaService.registrar(vendaAtual)
+    this.vendaService.registrar(venda)
       .pipe(finalize(() => this.setLoading(false)))
       .subscribe({
-        next: (vendaConcluida) => {
+        next: (vendaRetornada) => { // O backend deve retornar a venda com ID
           this.showMessage(`Venda concluída!`, 'success');
+
+          // 3. CHAMA A IMPRESSÃO AQUI
+          // Usamos 'vendaRetornada' se o backend devolver o ID gerado,
+          // senão usamos 'venda' mesmo (mas sem ID na nota).
+          // Recomendo mesclar os dados para garantir que a nota tenha tudo.
+          const vendaParaImprimir = { ...venda, ...vendaRetornada };
+
+          // Pergunta simples ou imprime direto? Normalmente imprime direto em PDV rápido.
+          this.impressaoService.imprimirCupomNaoFiscal(vendaParaImprimir);
+
           this.limparVenda();
         },
-        error: (error) => {
-          console.error(error);
-          this.showMessage(error.error?.message || 'Erro ao finalizar venda', 'error');
+        error: (e) => {
+          console.error(e);
+          this.showMessage(e.error?.message || 'Erro ao finalizar', 'error');
         }
       });
   }
 
   limparVenda(): void {
     const novaVenda = this.criarVendaVazia();
+    this.clienteSelecionado = null; // <--- Limpa cliente visualmente
     this.valorPagoInput = 0;
     this.termoBusca = '';
     this.vendaSubject.next(novaVenda);
@@ -416,9 +430,50 @@ export class PdvComponent implements OnInit, OnDestroy {
     return Math.max(0, this.valorPagoInput - venda.valorTotal);
   }
 
+  abrirSelecaoCliente(): void {
+    import('./selecionar-cliente-dialog/selecionar-cliente-dialog.component')
+      .then(m => {
+        const dialogRef = this.dialog.open(m.SelecionarClienteDialogComponent, {
+          width: '500px',
+          disableClose: false
+        });
+
+        dialogRef.afterClosed().subscribe((cliente: Cliente | null) => {
+          // Se undefined, usuário fechou sem selecionar. Se null, clicou em "Não Identificar".
+          if (cliente !== undefined) {
+            this.definirCliente(cliente);
+          }
+        });
+      });
+  }
+
+  // 2. Método auxiliar para atualizar o estado
+  definirCliente(cliente: Cliente | null): void {
+    this.clienteSelecionado = cliente;
+
+    // Atualiza o objeto Venda
+    const venda = this.vendaSubject.value;
+    // Venda.clienteId espera number | undefined; use undefined quando não há cliente
+    venda.clienteId = cliente?.id ?? undefined;
+    venda.cliente = cliente ?? undefined; // Opcional, para exibição (garante undefined em vez de null)
+
+    this.vendaSubject.next({ ...venda }); // Atualiza tela
+
+    const msg = cliente ? `Cliente ${cliente.nome} vinculado!` : 'Venda sem cliente identificado.';
+    this.showMessage(msg, 'info');
+  }
+
+  // 3. Atualize o setupKeyboardShortcuts para incluir o F5
   setupKeyboardShortcuts(): void {
     document.addEventListener('keydown', (e) => {
-      if (e.key === 'F2') { e.preventDefault(); this.buscaInput?.nativeElement.focus(); }
+      if (e.key === 'F2') {
+        e.preventDefault();
+        this.buscaInput?.nativeElement.focus();
+      }
+      else if (e.key === 'F5') { // <--- NOVO ATALHO
+        e.preventDefault();
+        this.abrirSelecaoCliente();
+      }
       else if (e.key === 'F12') {
         e.preventDefault();
         if (this.podeFinalizarVenda(this.vendaAtual)) this.finalizarVenda();

@@ -1,5 +1,5 @@
 <div class="pdv-container">
-  
+
   <!-- Caixa Fechado -->
   <mat-card *ngIf="!caixaAberto" class="caixa-fechado-card">
     <mat-card-header>
@@ -16,10 +16,10 @@
 
   <!-- Conteúdo PDV (Só exibe se caixa aberto) -->
   <div *ngIf="caixaAberto" class="pdv-content">
-    
+
     <!-- Async Pipe Resolve a Venda aqui -->
     <ng-container *ngIf="venda$ | async as venda">
-      
+
       <div class="pdv-left">
         <mat-card class="search-card">
           <mat-card-header>
@@ -28,19 +28,19 @@
           <mat-card-content>
             <mat-form-field appearance="outline" class="full-width">
               <mat-label>Código de Barras / Nome</mat-label>
-              <input matInput #buscaInput 
+              <input matInput #buscaInput
                      [(ngModel)]="termoBusca"
                      (keyup.enter)="buscarProdutoManual()"
                      [disabled]="loading"
                      placeholder="Digite ou escaneie o código"
                      autocomplete="off">
               <mat-icon matPrefix>search</mat-icon>
-              
+
               <!-- Loader Correto -->
               <div class="loader-mini" *ngIf="loading">
                  <mat-spinner diameter="20"></mat-spinner>
               </div>
-              
+
               <button mat-icon-button matSuffix (click)="buscarProdutoManual()" [disabled]="loading">
                 <mat-icon>send</mat-icon>
               </button>
@@ -58,11 +58,11 @@
         <mat-card class="itens-card">
           <mat-card-header>
             <mat-card-title>Itens da Venda</mat-card-title>
-            <span class="items-count">{{ venda.itens?.length || 0 }} itens</span>
+            <span class="items-count">{{ venda.itens.length || 0 }} itens</span>
           </mat-card-header>
           <mat-card-content>
             <div class="itens-list">
-              
+
               <div *ngIf="!venda.itens || venda.itens.length === 0" class="empty-state">
                 <mat-icon>shopping_cart</mat-icon>
                 <p>Nenhum item adicionado</p>
@@ -92,6 +92,20 @@
 
       <!-- Totais e Pagamento -->
       <div class="pdv-right">
+        <mat-card class="cliente-card mb-3">
+        <mat-card-content class="cliente-content">
+          <div class="cliente-info">
+            <mat-icon>person</mat-icon>
+            <div class="dados">
+              <small>Cliente</small>
+              <strong>{{ clienteSelecionado?.nome || 'Consumidor Final' }}</strong>
+            </div>
+          </div>
+          <button mat-icon-button color="primary" (click)="abrirSelecaoCliente()" matTooltip="Identificar Cliente (F5)">
+            <mat-icon>search</mat-icon>
+          </button>
+        </mat-card-content>
+      </mat-card>
         <mat-card class="total-card">
           <mat-card-content>
             <div class="total-section">
@@ -114,8 +128,8 @@
               <mat-form-field appearance="outline" class="full-width">
                 <mat-label>Desconto (R$)</mat-label>
                 <!-- Atualiza o objeto e recalcula -->
-                <input matInput type="number" 
-       [ngModel]="venda.valorDesconto" 
+                <input matInput type="number"
+       [ngModel]="venda.valorDesconto"
        (ngModelChange)="venda.valorDesconto = $event; calcularTotaisUsuario()"
        min="0">
                 <mat-icon matPrefix>local_offer</mat-icon>
@@ -153,7 +167,7 @@
               <button mat-raised-button color="warn" (click)="cancelarVenda()" [disabled]="!venda.itens || venda.itens.length === 0">
                 <mat-icon>cancel</mat-icon> Cancelar
               </button>
-              <button mat-raised-button color="primary" 
+              <button mat-raised-button color="primary"
         (click)="finalizarVenda()"
         [disabled]="!podeFinalizarVenda(venda) || loading"
         class="finalizar-btn">

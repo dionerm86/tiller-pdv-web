@@ -21,7 +21,7 @@ export class VendaService {
     return this.api.get<Venda[]>('vendas/hoje');
   }
 
-  cancelar(id: number, motivo: string): Observable<Venda> {
-    return this.api.post<Venda>(`vendas/${id}/cancelar`, { motivo });
-  }
+  cancelar(id: number): Observable<void> {
+    return this.api.post<void>(`vendas/${id}/cancelar`, {});
+}
 }

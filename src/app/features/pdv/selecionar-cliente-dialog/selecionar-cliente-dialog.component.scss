@@ -1,0 +1,22 @@
+.full-width {
+      width: 100%;
+    }
+
+    /* Adiciona padding no topo para o label não cortar */
+    mat-dialog-content {
+      padding-top: 10px !important;
+      min-height: 300px; /* Garante altura mínima */
+    }
+
+    .cliente-list {
+      max-height: 300px;
+      overflow-y: auto;
+      margin-top: 10px;
+    }
+
+    .no-results {
+      text-align: center;
+      padding: 20px;
+      color: #666;
+      font-style: italic;
+    }

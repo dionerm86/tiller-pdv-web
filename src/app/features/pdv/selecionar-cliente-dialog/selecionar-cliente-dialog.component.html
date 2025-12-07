@@ -1,0 +1,37 @@
+<h2 mat-dialog-title>Identificar Cliente</h2>
+<mat-dialog-content>
+  <mat-form-field appearance="outline" class="full-width">
+    <mat-label>Buscar por Nome ou CPF/CNPJ</mat-label>
+    <input
+      matInput
+      [formControl]="searchControl"
+      placeholder="Digite para buscar..."
+      #searchInput
+      cdkFocusInitial
+    />
+    <mat-icon matSuffix>search</mat-icon>
+  </mat-form-field>
+
+  <mat-progress-bar *ngIf="loading" mode="indeterminate"></mat-progress-bar>
+
+  <mat-nav-list class="cliente-list">
+    <a
+      mat-list-item
+      *ngFor="let cliente of clientes"
+      (click)="selecionar(cliente)"
+    >
+      <mat-icon matListItemIcon>person</mat-icon>
+      <div matListItemTitle>{{ cliente.nome }}</div>
+      <div matListItemLine>{{ cliente.cpf_CNPJ || "Sem documento" }}</div>
+    </a>
+    <div *ngIf="clientes.length === 0 && !loading" class="no-results">
+      <p>Nenhum cliente encontrado.</p>
+    </div>
+  </mat-nav-list>
+</mat-dialog-content>
+<mat-dialog-actions align="end">
+  <button mat-button (click)="cancelar()">Cancelar</button>
+  <button mat-button (click)="selecionar(null)" color="warn">
+    Não Identificar
+  </button>
+</mat-dialog-actions>

@@ -241,3 +241,31 @@
     .full-width {
       width: 100%;
     }
+
+    .cliente-card {
+  margin-bottom: 16px;
+
+  .cliente-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+  }
+
+  .cliente-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    mat-icon { color: #666; }
+
+    .dados {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.2;
+
+      small { color: #888; font-size: 11px; text-transform: uppercase; }
+      strong { font-size: 15px; color: #333; }
+    }
+  }
+}

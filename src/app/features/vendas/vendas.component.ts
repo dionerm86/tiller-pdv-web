@@ -15,7 +15,14 @@ import { MatTooltipModule } from '@angular/material/tooltip';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
+import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar'; // Importe o SnackBar
+
+// Services
 import { ApiService } from '../../core/services/api.service';
+import { ImpressaoService } from '../../core/services/impressao.service'; // Importe a Impressão
+import { VendaService } from '../../core/services/venda.service'; // Importe VendaService
+
+// Models
 import { Venda } from '../../core/model/venda.model';
 import { VendaDetalhesDialogComponent } from './venda-detalhes-dialog/venda-detalhes-dialog.component';
 
@@ -38,7 +45,8 @@ import { VendaDetalhesDialogComponent } from './venda-detalhes-dialog/venda-deta
     MatTooltipModule,
     MatDialogModule,
     MatDatepickerModule,
-    MatNativeDateModule
+    MatNativeDateModule,
+    MatSnackBarModule
   ],
   template: `
     <div class="vendas-container">
@@ -203,8 +211,8 @@ import { VendaDetalhesDialogComponent } from './venda-detalhes-dialog/venda-deta
                   <button mat-icon-button (click)="imprimirComprovante(venda)" matTooltip="Imprimir">
                     <mat-icon>print</mat-icon>
                   </button>
-                  <button mat-icon-button 
-                          (click)="cancelarVenda(venda)" 
+                  <button mat-icon-button
+                          (click)="cancelarVenda(venda)"
                           matTooltip="Cancelar Venda"
                           [disabled]="venda.status === 'Cancelada'"
                           color="warn">
@@ -214,7 +222,7 @@ import { VendaDetalhesDialogComponent } from './venda-detalhes-dialog/venda-deta
               </ng-container>
 
               <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
-              <tr mat-row *matRowDef="let row; columns: displayedColumns;" 
+              <tr mat-row *matRowDef="let row; columns: displayedColumns;"
                   class="table-row"
                   (click)="verDetalhes(row)"></tr>
 
@@ -230,7 +238,7 @@ import { VendaDetalhesDialogComponent } from './venda-detalhes-dialog/venda-deta
             </table>
           </div>
 
-          <mat-paginator 
+          <mat-paginator
             [pageSizeOptions]="[10, 25, 50, 100]"
             [pageSize]="25"
             showFirstLastButtons>
@@ -407,7 +415,10 @@ export class VendasComponent implements OnInit {
   constructor(
     private fb: FormBuilder,
     private apiService: ApiService,
-    private dialog: MatDialog
+    private vendaService: VendaService, // Use VendaService dedicado
+    private impressaoService: ImpressaoService, // Injete ImpressaoService
+    private dialog: MatDialog,
+    private snackBar: MatSnackBar
   ) {
     this.dataSource = new MatTableDataSource<Venda>([]);
     this.createForm();
@@ -434,6 +445,8 @@ export class VendasComponent implements OnInit {
   carregarVendas(): void {
     const filtros = this.getFiltrosParams();
 
+    // OBS: Ajuste a URL se você criou um endpoint de busca específico no VendaController
+    // Se não, use o método search do VendaService
     this.apiService.get<Venda[]>('dashboard/vendas-periodo', filtros).subscribe({
       next: (vendas) => {
         this.dataSource.data = vendas;
@@ -443,6 +456,7 @@ export class VendasComponent implements OnInit {
       },
       error: (error) => {
         console.error('Erro ao carregar vendas:', error);
+        this.showMessage('Erro ao carregar histórico.', 'error');
       }
     });
   }
@@ -458,6 +472,23 @@ export class VendasComponent implements OnInit {
       const dataFim = new Date(valores.dataFim);
       dataFim.setHours(23, 59, 59);
       params.dataFim = dataFim.toISOString();
+    }
+
+    // --- CORREÇÃO: Mapear os outros filtros ---
+    if (valores.status) {
+        params.status = valores.status;
+    }
+    // Supondo que o backend espere o ID ou String do Enum
+    if (valores.formaPagamento) {
+        // Se o backend espera int, você precisará converter aqui
+        // params.formaPagamentoId = ...
+        // Se espera string:
+        params.formaPagamento = valores.formaPagamento;
+    }
+
+    // O IMPORTANTE: Passar o termo de busca genérica
+    if (valores.busca) {
+        params.termoBusca = valores.busca; // Mapeia para o parametro 'termoBusca' do backend
     }
 
     return params;
@@ -504,18 +535,59 @@ export class VendasComponent implements OnInit {
     });
   }
 
+  // --- IMPLEMENTAÇÃO DA IMPRESSÃO ---
   imprimirComprovante(venda: Venda): void {
-    // Implementar impressão
-    console.log('Imprimir venda:', venda);
+    this.impressaoService.imprimirCupomNaoFiscal(venda);
+    this.showMessage('Enviado para impressão.', 'success');
   }
 
+  // --- IMPLEMENTAÇÃO DO CANCELAMENTO ---
   cancelarVenda(venda: Venda): void {
-    // Implementar cancelamento
-    console.log('Cancelar venda:', venda);
+    if (confirm(`Tem certeza que deseja cancelar a venda ${venda.numeroVenda}? Isso reverterá o estoque.`)) {
+
+        // Assumindo que venda.id existe. Se não, use venda.numeroVenda dependendo da sua API
+        this.vendaService.cancelar(venda.id!).subscribe({
+            next: () => {
+                this.showMessage('Venda cancelada com sucesso!', 'success');
+                this.carregarVendas(); // Atualiza a lista
+            },
+            error: (err) => {
+                this.showMessage('Erro ao cancelar venda.', 'error');
+                console.error(err);
+            }
+        });
+    }
   }
 
   exportar(): void {
-    // Implementar exportação
-    console.log('Exportar vendas');
+    // Exportação simples para CSV (Front-end puro)
+    const data = this.dataSource.data.map(v => ({
+        Numero: v.numeroVenda,
+        Data: new Date(v.dataHora!).toLocaleString(),
+        Cliente: v.cliente?.nome || 'Consumidor',
+        Valor: v.valorTotal,
+        Status: v.status
+    }));
+
+    // Lógica básica de CSV (pode ser melhorada depois)
+    const csvContent = "data:text/csv;charset=utf-8,"
+        + "Numero,Data,Cliente,Valor,Status\n"
+        + data.map(row => `${row.Numero},"${row.Data}","${row.Cliente}",${row.Valor},${row.Status}`).join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "vendas_export.csv");
+    document.body.appendChild(link);
+    link.click();
+  }
+
+  showMessage(msg: string, type: 'success' | 'error' = 'success'): void {
+      this.snackBar.open(msg, 'Fechar', {
+          duration: 3000,
+          panelClass: `snackbar-${type}`,
+          horizontalPosition: 'end',
+          verticalPosition: 'top'
+      });
   }
 }
